@@ -126,6 +126,72 @@ const preloadImage = (url) => {
   });
 };
 
+// Adicione este componente de status estilizado
+const StatusIndicator = styled("span")(({ status }) => ({
+  width: "8px",
+  height: "8px",
+  borderRadius: "50%",
+  display: "inline-block",
+  marginRight: "4px",
+  backgroundColor:
+    status === "finished"
+      ? "#48bb78" // verde para finalizado
+      : status === "live"
+      ? "#fc8181" // vermelho para ao vivo
+      : status === "scheduled"
+      ? "#f6e05e" // amarelo para agendado
+      : "#718096", // cinza para outros estados
+}));
+
+const StatusWrapper = styled("div")({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "4px",
+  fontSize: "0.75rem",
+  padding: "4px 8px",
+  borderRadius: "4px",
+  backgroundColor: "rgba(0, 0, 0, 0.2)",
+  width: "fit-content",
+  margin: "0 auto",
+});
+
+// Adicione esta função de formatação de nomes
+const formatTeamName = (name) => {
+  // Mapa de abreviações comuns
+  const abbreviations = {
+    Philadelphia: "PHI",
+    Milwaukee: "MIL",
+    Boston: "BOS",
+    Lakers: "LAL",
+    Warriors: "GSW",
+    // Adicione mais conforme necessário
+  };
+
+  // Se for um nome conhecido, usa a abreviação
+  for (const [full, abbr] of Object.entries(abbreviations)) {
+    if (name.includes(full)) return abbr;
+  }
+
+  // Se o nome tiver mais de 15 caracteres, abrevia
+  if (name.length > 15) {
+    const words = name.split(" ");
+    if (words.length > 1) {
+      // Pega a primeira letra de cada palavra, exceto a última
+      return (
+        words
+          .slice(0, -1)
+          .map((word) => word[0])
+          .join("") +
+        " " +
+        words[words.length - 1]
+      );
+    }
+  }
+
+  return name;
+};
+
 function BasketballStats() {
   // Loading states
   const [loadingStates, setLoadingStates] = useState({
@@ -163,20 +229,25 @@ function BasketballStats() {
     return team1Games.map((game1, index) => {
       const game2 = team2Games[index];
 
-      // Pegar pontos do time favorito (time1)
+      // Usar totalSemOT ao invés de total
       const pontosFavorito =
         game1.teams.home.id === selectedTeams.team1.id
-          ? game1.scores.home.total
-          : game1.scores.away.total;
+          ? game1.scores.home.totalSemOT
+          : game1.scores.away.totalSemOT;
 
-      // Pegar pontos tomados do adversário (time2)
       const pontosTomadosAdversario =
         game2.teams.home.id === selectedTeams.team2.id
-          ? game2.scores.away.total
-          : game2.scores.home.total;
+          ? game2.scores.away.totalSemOT
+          : game2.scores.home.totalSemOT;
 
-      // Calcular o total combinado (pontos favorito + pontos tomados adversário)
       const totalCombinado = pontosFavorito + pontosTomadosAdversario;
+
+      // Adicionar informação de overtime para exibição
+      const hasOvertime =
+        game1.scores.home.hasOvertime ||
+        game1.scores.away.hasOvertime ||
+        game2.scores.home.hasOvertime ||
+        game2.scores.away.hasOvertime;
 
       return {
         data: formatarData(game1.date),
@@ -188,7 +259,8 @@ function BasketballStats() {
           nome: selectedTeams.team2.name,
           pontosTomados: pontosTomadosAdversario,
         },
-        totalCombinado: totalCombinado,
+        totalCombinado,
+        hasOvertime,
       };
     });
   };
@@ -235,22 +307,48 @@ function BasketballStats() {
     }
   };
 
+  // Modifique a função getGameStatus
   const getGameStatus = (status) => {
     switch (status.short) {
       case "LIVE":
       case "INPLAY":
-        return <span className="status-live">Ao Vivo</span>;
+        return (
+          <StatusWrapper>
+            <StatusIndicator status="live" />
+            <span>Live</span>
+          </StatusWrapper>
+        );
       case "HT":
-        return <span className="status-live">Intervalo</span>;
+        return (
+          <StatusWrapper>
+            <StatusIndicator status="live" />
+            <span>HT</span>
+          </StatusWrapper>
+        );
       case "FT":
       case "FINISHED":
       case "END":
-        return <span className="status-finished">Finalizado</span>;
+        return (
+          <StatusWrapper>
+            <StatusIndicator status="finished" />
+            <span>FT</span>
+          </StatusWrapper>
+        );
       case "NS":
       case "SCHED":
-        return <span className="status-scheduled">Agendado</span>;
+        return (
+          <StatusWrapper>
+            <StatusIndicator status="scheduled" />
+            <span>Agd</span>
+          </StatusWrapper>
+        );
       default:
-        return <span className="status-unknown">{status.long}</span>;
+        return (
+          <StatusWrapper>
+            <StatusIndicator />
+            <span>{status.short || "?"}</span>
+          </StatusWrapper>
+        );
     }
   };
 
@@ -317,9 +415,18 @@ function BasketballStats() {
               return (
                 <tr key={index}>
                   <td>{comp.data}</td>
-                  <td className="pontos-feitos">{comp.time1.pontos}</td>
-                  <td className="pontos-tomados">{comp.time2.pontosTomados}</td>
-                  <td className="total-combined">{comp.totalCombinado}</td>
+                  <td className="pontos-feitos">
+                    {comp.time1.pontos}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td className="pontos-tomados">
+                    {comp.time2.pontosTomados}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td className="total-combined">
+                    {comp.totalCombinado}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
                 </tr>
               );
             })}
@@ -330,6 +437,12 @@ function BasketballStats() {
             </tr>
           </tbody>
         </table>
+        {comparacoes.some((comp) => comp.hasOvertime) && (
+          <div className="overtime-note">
+            * Jogo com prorrogação (pontos da prorrogação não incluídos no
+            total)
+          </div>
+        )}
       </div>
     );
   };
@@ -534,6 +647,7 @@ function BasketballStats() {
     );
   };
 
+  // Modifique o render da tabela de últimos jogos
   const renderUltimosJogos = (teamData) => {
     if (loading) return <LastGamesSkeleton />;
     if (!teamData?.games || teamData.games.length === 0) {
@@ -576,7 +690,7 @@ function BasketballStats() {
                     game.teams.home.id === teamData.id ? "highlight" : ""
                   }
                 >
-                  {game.teams.home.name}
+                  {formatTeamName(game.teams.home.name)}
                 </td>
                 <td className="score">
                   {game.scores.home.totalSemOT}
@@ -593,29 +707,22 @@ function BasketballStats() {
                     game.teams.away.id === teamData.id ? "highlight" : ""
                   }
                 >
-                  {game.teams.away.name}
+                  {formatTeamName(game.teams.away.name)}
                 </td>
                 <td className="total-score">{calcularTotalPartida(game)}</td>
               </tr>
             ))}
             <tr className="totals-row">
-              <td colSpan="2">Totais</td>
-              <td>Feitos: {totais.pontosFeitos}</td>
-              <td>Sofridos: {totais.pontosSofridos}</td>
-            </tr>
-            <tr className="grand-total-row">
-              <td colSpan="4">Total de pontos nos jogos: {totais.total}</td>
+              <td colSpan="6">
+                {" "}
+                {/* Ajustado para cobrir todas as colunas */}
+                <div className="totals-content">
+                  <span>Total de pontos nos jogos: {totais.total}</span>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
-        {teamData.games.some(
-          (g) => g.scores.home.hasOvertime || g.scores.away.hasOvertime
-        ) && (
-          <div className="overtime-note">
-            * Jogo com prorrogação (pontos da prorrogação não incluídos no
-            total)
-          </div>
-        )}
       </div>
     );
   };

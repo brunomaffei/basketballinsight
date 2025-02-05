@@ -65,11 +65,15 @@
 
 .stats-tables-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(600px, 1fr)
+  ); /* Aumentado o minmax */
   gap: 20px;
   margin: 0 auto;
   width: 100%;
   padding: 10px;
+  overflow-x: visible;
 }
 
 .stats-table {
@@ -231,7 +235,7 @@
 
 .last-games {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: visible;
   margin-top: 2rem;
   background: rgba(26, 32, 44, 0.7);
   border-radius: 12px;
@@ -247,14 +251,13 @@
 }
 
 .last-games table {
-  min-width: 100%;
-  white-space: nowrap;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-  background: transparent;
-  border-radius: 16px;
-  overflow: hidden;
   width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(26, 32, 44, 0.7);
+  margin-bottom: 1rem;
 }
 
 .last-games th {
@@ -265,10 +268,14 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: normal; /* Permite quebra de linha */
+  font-size: 0.8rem;
 }
 
 .last-games td {
-  padding: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -339,8 +346,9 @@
 }
 
 .totals-row td {
-  padding: 12px;
-  border-top: 2px solid #1a237e;
+  padding: 1rem;
+  background: rgba(44, 55, 82, 0.9);
+  border-top: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .grand-total-row {
@@ -353,6 +361,43 @@
 .grand-total-row td {
   padding: 12px;
   color: #e2e8f0;
+}
+
+.status-live,
+.status-finished,
+.status-scheduled,
+.status-unknown {
+  /* Remover estes estilos */
+}
+
+.last-games table th:nth-child(1), /* Data */
+.last-games td:nth-child(1) {
+  width: 100px;
+}
+
+.last-games table th:nth-child(2), /* Status */
+.last-games td:nth-child(2) {
+  width: 80px;
+}
+
+.last-games table th:nth-child(3), /* Time Casa */
+.last-games td:nth-child(3),
+.last-games th:nth-child(5), /* Time Visitante */
+.last-games td:nth-child(5) {
+  width: 120px;
+  text-align: left;
+}
+
+.last-games table th:nth-child(4), /* Placar */
+.last-games td:nth-child(4) {
+  width: 100px;
+  text-align: center;
+}
+
+.last-games table th:nth-child(6), /* Total */
+.last-games td:nth-child(6) {
+  width: 80px;
+  text-align: right;
 }
 
 .status-live {
@@ -423,7 +468,7 @@
 
 .comparison-section {
   width: 100%;
-  overflow-x: auto;
+  overflow-x: visible;
   margin: 2rem auto;
   background: rgba(26, 32, 44, 0.7);
   border-radius: 12px;
@@ -447,6 +492,7 @@
   background: transparent;
   border-radius: 16px;
   overflow: hidden;
+  table-layout: fixed; /* Adicionado para melhor controle das colunas */
 }
 
 .comparison-section th {
@@ -539,6 +585,14 @@
 
   .stats-tables-container {
     grid-template-columns: 1fr;
+  }
+
+  .last-games {
+    overflow-x: auto;
+  }
+
+  .last-games table {
+    min-width: 600px;
   }
 }
 

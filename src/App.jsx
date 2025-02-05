@@ -10,13 +10,21 @@ function App() {
         padding: "2rem 1rem",
       }}
     >
-      <div className="content-wrapper">
+      <div
+        className="content-wrapper"
+        style={{
+          width: "100%",
+          margin: "0 auto",
+          maxWidth: "100%", // Removido o limite de largura
+          padding: "0 1rem",
+        }}
+      >
         <header
           className="app-header"
           style={{
             textAlign: "center",
             marginBottom: "2rem",
-            padding: "1rem",
+            padding: "1.5rem",
             background: "rgba(17, 25, 40, 0.75)",
             borderRadius: "12px",
             backdropFilter: "blur(8px)",
@@ -73,6 +81,9 @@ function App() {
             background: "rgba(17, 25, 40, 0.75)",
             backdropFilter: "blur(12px)",
             border: "1px solid rgba(255, 255, 255, 0.125)",
+            padding: "2rem",
+            width: "100%",
+            overflowX: "visible", // Permite que as tabelas usem toda a largura
           }}
         >
           <BasketballStats />
