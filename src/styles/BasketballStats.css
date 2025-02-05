@@ -498,7 +498,7 @@
 .comparison-section th {
   background: rgba(44, 55, 82, 0.9);
   color: #a5b4fc;
-  padding: 1rem;
+  padding: 12px 8px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -506,7 +506,7 @@
 }
 
 .comparison-section td {
-  padding: 12px;
+  padding: 12px 8px;
   text-align: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -556,6 +556,92 @@
   padding: 12px;
   text-align: center;
   min-width: 100px;
+}
+
+/* Adicione estes estilos para a nova coluna */
+.variacao {
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.variacao.over {
+  color: #48bb78;
+  background: rgba(72, 187, 120, 0.1);
+}
+
+.variacao.under {
+  color: #fc8181;
+  background: rgba(252, 129, 129, 0.1);
+}
+
+/* Ajuste o layout da tabela para acomodar a nova coluna */
+.comparison-section table th:nth-child(5),
+.comparison-section table td:nth-child(5) {
+  width: 120px;
+}
+
+/* Adicione estes estilos para a tabela de comparação */
+.comparison-section .team-header-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0 8px;
+}
+
+.comparison-section .team-mini-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px;
+}
+
+.comparison-section table th:nth-child(1), /* Data */
+.comparison-section table td:nth-child(1) {
+  width: 100px;
+}
+
+.comparison-section table th:nth-child(2), /* Time 1 */
+.comparison-section table td:nth-child(2),
+.comparison-section table th:nth-child(3), /* Time 2 */
+.comparison-section table td:nth-child(3) {
+  width: 160px;
+}
+
+.comparison-section table th:nth-child(4), /* Total */
+.comparison-section table td:nth-child(4) {
+  width: 100px;
+}
+
+.comparison-section table th:nth-child(5), /* Variação */
+.comparison-section table td:nth-child(5) {
+  width: 80px;
+}
+
+/* Ajuste responsivo */
+@media (max-width: 768px) {
+  .comparison-section {
+    overflow-x: auto;
+  }
+
+  .comparison-section table {
+    min-width: 600px;
+  }
+
+  .comparison-section .team-header-cell {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .comparison-section .team-mini-logo {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 @media (max-width: 1200px) {
@@ -779,244 +865,153 @@
 
 /* Estilos atualizados para análise Over/Under */
 .analise-overunder {
-  background: rgba(17, 25, 40, 0.95);
-  border-radius: 20px;
-  padding: 2rem;
-  margin: 2rem 0;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-.linha-bet-container {
-  background: rgba(26, 32, 44, 0.7);
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.linha-bet-container label {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--secondary-text);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  white-space: nowrap;
-}
-
-.linha-bet-container input {
-  max-width: 150px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(165, 180, 252, 0.3);
-  color: #fff;
-  padding: 1rem;
-  font-size: 1.3rem;
-  font-weight: 700;
-  text-align: center;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.linha-bet-container input:focus {
-  outline: none;
-  border-color: var(--secondary-text);
-  box-shadow: 0 0 0 3px rgba(165, 180, 252, 0.2);
-}
-
-.analise-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 2rem;
+  /* remover ou comentar os estilos antigos */
 }
 
 .analise-section {
-  background: rgba(26, 32, 44, 0.7);
+  /* remover ou comentar os estilos antigos */
+}
+
+.analise-stats-grid {
+  /* remover ou comentar os estilos antigos */
+}
+
+.analise-overunder-compact {
+  background: rgba(17, 25, 40, 0.95);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.analise-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.analise-card {
+  background: rgba(26, 32, 44, 0.7);
+  border-radius: 12px;
+  padding: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s ease;
 }
 
-.analise-section:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.analise-section.over {
+.analise-card.over {
   background: linear-gradient(
     145deg,
-    rgba(56, 161, 105, 0.1) 0%,
-    rgba(26, 32, 44, 0.9) 100%
+    rgba(56, 161, 105, 0.1),
+    rgba(26, 32, 44, 0.9)
   );
 }
 
-.analise-section.under {
+.analise-card.under {
   background: linear-gradient(
     145deg,
-    rgba(229, 62, 62, 0.1) 0%,
-    rgba(26, 32, 44, 0.9) 100%
+    rgba(229, 62, 62, 0.1),
+    rgba(26, 32, 44, 0.9)
   );
 }
 
-.analise-header {
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.analise-header h4 {
-  font-size: 1.5rem;
-  font-weight: 700;
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-info h4 {
+  font-size: 1rem;
+  font-weight: 600;
   color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  margin: 0;
 }
 
-.analise-header .percentage {
-  font-size: 1.3rem;
-  font-weight: 700;
-  padding: 0.5rem 1.5rem;
-  border-radius: 12px;
+.quick-stats {
+  font-size: 0.8rem;
+  color: #a0aec0;
+}
+
+.games-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.game-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.game-date {
+  color: #a0aec0;
+  font-size: 0.8rem;
+}
+
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.game-total {
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.game-diff {
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 45px;
+  text-align: center;
+}
+
+.over .game-diff {
+  background: rgba(72, 187, 120, 0.2);
+  color: #48bb78;
+}
+
+.under .game-diff {
+  background: rgba(252, 129, 129, 0.2);
+  color: #fc8181;
+}
+
+.percentage {
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
   background: rgba(0, 0, 0, 0.3);
 }
 
 .over .percentage {
   color: #48bb78;
 }
+
 .under .percentage {
   color: #fc8181;
 }
 
-.jogos-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.jogo-item {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 12px;
-  padding: 1.2rem;
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  gap: 1.5rem;
-  align-items: center;
-  transition: transform 0.2s ease;
-}
-
-.jogo-item:hover {
-  transform: translateX(5px);
-  background: rgba(0, 0, 0, 0.4);
-}
-
-.jogo-item .data {
-  color: #a0aec0;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
-}
-
-.jogo-item .times {
-  color: #fff;
-  font-weight: 500;
-  font-size: 1rem;
-}
-
-.jogo-item .placar {
-  font-family: var(--font-secondary);
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 8px;
-}
-
-.total-container {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.jogo-item .total {
-  font-family: var(--font-secondary);
-  font-weight: 800;
-  font-size: 1.2rem;
-}
-
-.over .jogo-item .total {
-  color: #48bb78;
-}
-.under .jogo-item .total {
-  color: #fc8181;
-}
-
-.jogo-item .diferenca {
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
-  min-width: 70px;
-  text-align: center;
-}
-
-.over .jogo-item .diferenca {
-  background: rgba(72, 187, 120, 0.2);
-  color: #48bb78;
-}
-
-.under .jogo-item .diferenca {
-  background: rgba(252, 129, 129, 0.2);
-  color: #fc8181;
-}
-
-@media (max-width: 1200px) {
-  .analise-stats-grid {
+/* Responsividade */
+@media (max-width: 768px) {
+  .analise-cards {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
   }
 
-  .jogo-item {
-    grid-template-columns: 1fr auto;
-    gap: 1rem;
-  }
-
-  .jogo-item .times {
-    grid-column: 1 / -1;
-    font-size: 0.95rem;
-  }
-
-  .total-container {
-    grid-column: 1 / -1;
-    justify-content: flex-end;
-  }
-}
-
-@media (max-width: 480px) {
-  .linha-bet-container {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-
-  .linha-bet-container input {
-    max-width: 100%;
-  }
-
-  .jogo-item {
-    padding: 1rem;
-  }
-
-  .jogo-item .placar {
-    font-size: 1rem;
-    padding: 0.4rem 0.8rem;
+  .game-item {
+    font-size: 0.8rem;
   }
 }
 

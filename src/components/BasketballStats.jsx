@@ -223,13 +223,12 @@ function BasketballStats() {
   };
 
   // Helper functions (alphabetically ordered)
+  // Modifique a função calcularComparacao para incluir a diferença da média
   const calcularComparacao = (team1Games, team2Games) => {
     if (!team1Games?.length || !team2Games?.length) return null;
 
-    return team1Games.map((game1, index) => {
+    const comparacoes = team1Games.map((game1, index) => {
       const game2 = team2Games[index];
-
-      // Usar totalSemOT ao invés de total
       const pontosFavorito =
         game1.teams.home.id === selectedTeams.team1.id
           ? game1.scores.home.totalSemOT
@@ -242,7 +241,6 @@ function BasketballStats() {
 
       const totalCombinado = pontosFavorito + pontosTomadosAdversario;
 
-      // Adicionar informação de overtime para exibição
       const hasOvertime =
         game1.scores.home.hasOvertime ||
         game1.scores.away.hasOvertime ||
@@ -263,6 +261,17 @@ function BasketballStats() {
         hasOvertime,
       };
     });
+
+    // Calcular a média para poder comparar cada jogo
+    const media =
+      comparacoes.reduce((acc, comp) => acc + comp.totalCombinado, 0) /
+      comparacoes.length;
+
+    // Adicionar a diferença da média para cada jogo
+    return comparacoes.map((comp) => ({
+      ...comp,
+      diferencaDaMedia: comp.totalCombinado - media,
+    }));
   };
 
   const calcularTotaisJogos = (games) => {
@@ -377,6 +386,7 @@ function BasketballStats() {
     return awayScore > homeScore;
   };
 
+  // Atualize o renderComparacao para mostrar a diferença
   const renderComparacao = () => {
     if (!team1Data || !team2Data) return null;
 
@@ -404,36 +414,60 @@ function BasketballStats() {
           <thead>
             <tr>
               <th>Data</th>
-              <th>{team1Data.name} (Favorito)</th>
-              <th>Pontos Tomados {team2Data.name}</th>
-              <th>Total Combinado</th>
-              <th>Média</th>
+              <th>
+                <div className="team-header-cell">
+                  <img
+                    src={team1Data.logo}
+                    alt={team1Data.name}
+                    className="team-mini-logo"
+                  />
+                  <span>{formatTeamName(team1Data.name)} (F)</span>
+                </div>
+              </th>
+              <th>
+                <div className="team-header-cell">
+                  <img
+                    src={team2Data.logo}
+                    alt={team2Data.name}
+                    className="team-mini-logo"
+                  />
+                  <span>Pts {formatTeamName(team2Data.name)}</span>
+                </div>
+              </th>
+              <th>Total</th>
+              <th>Var.</th>
             </tr>
           </thead>
           <tbody>
-            {comparacoes.map((comp, index) => {
-              return (
-                <tr key={index}>
-                  <td>{comp.data}</td>
-                  <td className="pontos-feitos">
-                    {comp.time1.pontos}
-                    {comp.hasOvertime && <span className="overtime">*</span>}
-                  </td>
-                  <td className="pontos-tomados">
-                    {comp.time2.pontosTomados}
-                    {comp.hasOvertime && <span className="overtime">*</span>}
-                  </td>
-                  <td className="total-combined">
-                    {comp.totalCombinado}
-                    {comp.hasOvertime && <span className="overtime">*</span>}
-                  </td>
-                </tr>
-              );
-            })}
+            {comparacoes.map((comp, index) => (
+              <tr key={index}>
+                <td>{comp.data}</td>
+                <td className="pontos-feitos">
+                  {comp.time1.pontos}
+                  {comp.hasOvertime && <span className="overtime">*</span>}
+                </td>
+                <td className="pontos-tomados">
+                  {comp.time2.pontosTomados}
+                  {comp.hasOvertime && <span className="overtime">*</span>}
+                </td>
+                <td className="total-combined">
+                  {comp.totalCombinado}
+                  {comp.hasOvertime && <span className="overtime">*</span>}
+                </td>
+                <td
+                  className={`variacao ${
+                    comp.diferencaDaMedia > 0 ? "over" : "under"
+                  }`}
+                >
+                  {comp.diferencaDaMedia > 0 ? "+" : ""}
+                  {comp.diferencaDaMedia.toFixed(1)}
+                </td>
+              </tr>
+            ))}
             <tr className="grand-total-row">
-              <td colSpan="3">Total Geral</td>
-              <td>{totalGeral}</td>
+              <td colSpan="3">Média</td>
               <td>{mediaAtual}</td>
+              <td>-</td>
             </tr>
           </tbody>
         </table>
@@ -918,7 +952,7 @@ function BasketballStats() {
         elevation={0}
         className="selectors-container"
         sx={{
-          background: "rgba(255, 255, 255, 0.05)",
+          background: "rgba(165, 164, 164, 0.05)",
           backdropFilter: "blur(10px)",
           display: "flex",
           flexDirection: "column",
