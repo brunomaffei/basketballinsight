@@ -218,8 +218,6 @@ function BasketballStats() {
   const [isDataFetching, setIsDataFetching] = useState(false);
   const [mediaGeral, setMediaGeral] = useState(null);
 
-  console.log(season, "@@SEASON");
-
   const updateLoadingState = (key, value) => {
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   };
@@ -732,9 +730,8 @@ function BasketballStats() {
       try {
         const data = await buscarSeasons();
         if (data.response && data.response.length > 0) {
-          console.log(data, "@@SEASONS");
           setSeasons(data.response);
-          setSeason(data.response[0]); // Set the full season string
+          setSeason(data.response[0]);
         }
       } catch (e) {
         console.error(e);
