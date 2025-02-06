@@ -105,35 +105,6 @@ export async function buscarTeams(leagueId, season) {
   }
 }
 
-// // Função auxiliar para buscar times através dos jogos
-// async function buscarTimesPorJogos(leagueId, season) {
-//   const url = `${BASE_URL}/games?league=${leagueId}&season=${season}`;
-
-//   const response = await fetch(url, {
-//     headers: API_HEADERS,
-//   });
-
-//   const data = await response.json();
-
-//   if (!data.response || data.response.length === 0) {
-//     return { response: [] };
-//   }
-
-//   // Extrair times únicos dos jogos
-//   const uniqueTeams = new Map();
-
-//   data.response.forEach((game) => {
-//     if (game.teams?.home) {
-//       uniqueTeams.set(game.teams.home.id, game.teams.home);
-//     }
-//     if (game.teams?.away) {
-//       uniqueTeams.set(game.teams.away.id, game.teams.away);
-//     }
-//   });
-
-//   return { response: Array.from(uniqueTeams.values()) };
-// }
-
 // Função auxiliar para calcular o total sem overtime
 function calcularTotalSemOvertime(scores) {
   return (
