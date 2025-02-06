@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import {
   Select,
@@ -205,7 +205,7 @@ function BasketballStats() {
   const [error, setError] = useState(null);
   const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [season, setSeason] = useState("2023-2024");
+  const [season, setSeason] = useState("2024-2025"); // Change initial value to full season string
   const [seasons, setSeasons] = useState([]);
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [selectedTeams, setSelectedTeams] = useState({
@@ -218,61 +218,79 @@ function BasketballStats() {
   const [isDataFetching, setIsDataFetching] = useState(false);
   const [mediaGeral, setMediaGeral] = useState(null);
 
+  console.log(season, "@@SEASON");
+
   const updateLoadingState = (key, value) => {
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Helper functions (alphabetically ordered)
+  const formatarData = useCallback((dataString) => {
+    try {
+      const data = new Date(dataString);
+      return data.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch (e) {
+      console.error("Erro ao formatar data:", e);
+      return "Data inválida";
+    }
+  }, []);
+
   // Modifique a função calcularComparacao para incluir a diferença da média
-  const calcularComparacao = (team1Games, team2Games) => {
-    if (!team1Games?.length || !team2Games?.length) return null;
+  const calcularComparacao = useCallback(
+    (team1Games, team2Games) => {
+      if (!team1Games?.length || !team2Games?.length) return null;
 
-    const comparacoes = team1Games.map((game1, index) => {
-      const game2 = team2Games[index];
-      const pontosFavorito =
-        game1.teams.home.id === selectedTeams.team1.id
-          ? game1.scores.home.totalSemOT
-          : game1.scores.away.totalSemOT;
+      const comparacoes = team1Games.map((game1, index) => {
+        const game2 = team2Games[index];
+        const pontosFavorito =
+          game1.teams.home.id === selectedTeams.team1.id
+            ? game1.scores.home.totalSemOT
+            : game1.scores.away.totalSemOT;
 
-      const pontosTomadosAdversario =
-        game2.teams.home.id === selectedTeams.team2.id
-          ? game2.scores.away.totalSemOT
-          : game2.scores.home.totalSemOT;
+        const pontosTomadosAdversario =
+          game2.teams.home.id === selectedTeams.team2.id
+            ? game2.scores.away.totalSemOT
+            : game2.scores.home.totalSemOT;
 
-      const totalCombinado = pontosFavorito + pontosTomadosAdversario;
+        const totalCombinado = pontosFavorito + pontosTomadosAdversario;
 
-      const hasOvertime =
-        game1.scores.home.hasOvertime ||
-        game1.scores.away.hasOvertime ||
-        game2.scores.home.hasOvertime ||
-        game2.scores.away.hasOvertime;
+        const hasOvertime =
+          game1.scores.home.hasOvertime ||
+          game1.scores.away.hasOvertime ||
+          game2.scores.home.hasOvertime ||
+          game2.scores.away.hasOvertime;
 
-      return {
-        data: formatarData(game1.date),
-        time1: {
-          nome: selectedTeams.team1.name,
-          pontos: pontosFavorito,
-        },
-        time2: {
-          nome: selectedTeams.team2.name,
-          pontosTomados: pontosTomadosAdversario,
-        },
-        totalCombinado,
-        hasOvertime,
-      };
-    });
+        return {
+          data: formatarData(game1.date),
+          time1: {
+            nome: selectedTeams.team1.name,
+            pontos: pontosFavorito,
+          },
+          time2: {
+            nome: selectedTeams.team2.name,
+            pontosTomados: pontosTomadosAdversario,
+          },
+          totalCombinado,
+          hasOvertime,
+        };
+      });
 
-    // Calcular a média para poder comparar cada jogo
-    const media =
-      comparacoes.reduce((acc, comp) => acc + comp.totalCombinado, 0) /
-      comparacoes.length;
+      // Calcular a média para poder comparar cada jogo
+      const media =
+        comparacoes.reduce((acc, comp) => acc + comp.totalCombinado, 0) /
+        comparacoes.length;
 
-    // Adicionar a diferença da média para cada jogo
-    return comparacoes.map((comp) => ({
-      ...comp,
-      diferencaDaMedia: comp.totalCombinado - media,
-    }));
-  };
+      // Adicionar a diferença da média para cada jogo
+      return comparacoes.map((comp) => ({
+        ...comp,
+        diferencaDaMedia: comp.totalCombinado - media,
+      }));
+    },
+    [selectedTeams, formatarData]
+  );
 
   const calcularTotaisJogos = (games) => {
     if (!games || games.length === 0)
@@ -300,20 +318,6 @@ function BasketballStats() {
 
   const calcularTotalPartida = (game) => {
     return game.scores.home.totalSemOT + game.scores.away.totalSemOT;
-  };
-
-  const formatarData = (dataString) => {
-    try {
-      const data = new Date(dataString);
-      return data.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    } catch (e) {
-      console.error("Erro ao formatar data:", e);
-      return "Data inválida";
-    }
   };
 
   // Modifique a função getGameStatus
@@ -602,81 +606,6 @@ function BasketballStats() {
           <h3>{teamData.name}</h3>
           <p className="team-league">{stats.league.name}</p>
         </div>
-
-        <div className="stats-grid">
-          <div className="stats-section">
-            <h4>Jogos</h4>
-            <div className="stat-row">
-              <label>Total de Jogos:</label>
-              <span>{stats.games.played.all || 0}</span>
-            </div>
-            <div className="stat-row">
-              <label>Casa:</label>
-              <span>{stats.games.played.home || 0}</span>
-            </div>
-            <div className="stat-row">
-              <label>Fora:</label>
-              <span>{stats.games.played.away || 0}</span>
-            </div>
-          </div>
-
-          <div className="stats-section">
-            <h4>Vitórias</h4>
-            <div className="stat-row">
-              <label>Total:</label>
-              <span>
-                {stats.games.wins.all.total || 0} (
-                {((stats.games.wins.all.percentage || 0) * 100).toFixed(1)}%)
-              </span>
-            </div>
-            <div className="stat-row">
-              <label>Casa:</label>
-              <span>
-                {stats.games.wins.home.total || 0} (
-                {((stats.games.wins.home.percentage || 0) * 100).toFixed(1)}%)
-              </span>
-            </div>
-            <div className="stat-row">
-              <label>Fora:</label>
-              <span>
-                {stats.games.wins.away.total || 0} (
-                {((stats.games.wins.away.percentage || 0) * 100).toFixed(1)}%)
-              </span>
-            </div>
-          </div>
-
-          <div className="stats-section">
-            <h4>Pontuação</h4>
-            <div className="stat-row">
-              <label>Média (Geral):</label>
-              <span>{stats.points.for.average.all || 0}</span>
-            </div>
-            <div className="stat-row">
-              <label>Média (Casa):</label>
-              <span>{stats.points.for.average.home || 0}</span>
-            </div>
-            <div className="stat-row">
-              <label>Média (Fora):</label>
-              <span>{stats.points.for.average.away || 0}</span>
-            </div>
-          </div>
-
-          <div className="stats-section">
-            <h4>Pontos Sofridos</h4>
-            <div className="stat-row">
-              <label>Média (Geral):</label>
-              <span>{stats.points.against.average.all || 0}</span>
-            </div>
-            <div className="stat-row">
-              <label>Média (Casa):</label>
-              <span>{stats.points.against.average.home || 0}</span>
-            </div>
-            <div className="stat-row">
-              <label>Média (Fora):</label>
-              <span>{stats.points.against.average.away || 0}</span>
-            </div>
-          </div>
-        </div>
       </div>
     );
   };
@@ -803,8 +732,9 @@ function BasketballStats() {
       try {
         const data = await buscarSeasons();
         if (data.response && data.response.length > 0) {
+          console.log(data, "@@SEASONS");
           setSeasons(data.response);
-          setSeason(data.response[0]);
+          setSeason(data.response[0]); // Set the full season string
         }
       } catch (e) {
         console.error(e);
@@ -816,14 +746,22 @@ function BasketballStats() {
     fetchSeasons();
   }, []);
 
+  // Add a helper function to extract year
+  const getYearFromSeason = (seasonStr) => {
+    return seasonStr.split("-")[0];
+  };
+
   useEffect(() => {
     async function fetchTeams() {
       if (!selectedLeague) return;
       updateLoadingState("teams", true);
       try {
         setLoading(true);
-        // Passar a temporada completa
-        const data = await buscarTeams(selectedLeague.id, season);
+        // Use the extracted year for the API call
+        const data = await buscarTeams(
+          selectedLeague.id,
+          getYearFromSeason(season)
+        );
 
         if (!data.response || data.response.length === 0) {
           setError(
@@ -850,31 +788,32 @@ function BasketballStats() {
     async function fetchTeamData() {
       if (!selectedTeams.team1 || !selectedTeams.team2) return;
 
-      setIsDataFetching(true); // Set to true only when actually fetching
+      setIsDataFetching(true);
       setLoading(true);
 
       try {
+        const yearFromSeason = getYearFromSeason(season);
         const [team1Games, team2Games, team1Stats, team2Stats] =
           await Promise.all([
             buscarUltimosJogos(
               selectedTeams.team1.id,
-              season,
+              yearFromSeason,
               selectedLeague.id
             ),
             buscarUltimosJogos(
               selectedTeams.team2.id,
-              season,
+              yearFromSeason,
               selectedLeague.id
             ),
             buscarEstatisticasTime(
               selectedTeams.team1.id,
               selectedLeague.id,
-              season
+              yearFromSeason
             ),
             buscarEstatisticasTime(
               selectedTeams.team2.id,
               selectedLeague.id,
-              season
+              yearFromSeason
             ),
           ]);
 
@@ -916,7 +855,7 @@ function BasketballStats() {
         setMediaGeral(parseFloat(calculatedMedia));
       }
     }
-  }, [team1Data, team2Data]);
+  }, [team1Data, team2Data, calcularComparacao]);
 
   const LoadingIndicator = ({ loading, children }) => (
     <Box className="select-wrapper">
@@ -965,8 +904,8 @@ function BasketballStats() {
             <StyledFormControl>
               <InputLabel>Selecione a Temporada</InputLabel>
               <Select
-                value={season}
-                onChange={(e) => setSeason(e.target.value)}
+                value={season} // Use full season string as value
+                onChange={(e) => setSeason(e.target.value)} // Store full season string
                 disabled={loadingStates.seasons || loadingStates.leagues}
                 label="Selecione a Temporada"
                 MenuProps={MenuProps}
@@ -1163,18 +1102,6 @@ function BasketballStats() {
             {[team1Data, team2Data].map((teamData) => {
               return (
                 <div key={teamData.id} className="team-data-container">
-                  <h2>
-                    {loading ? (
-                      <Skeleton
-                        width={250}
-                        height={36}
-                        {...skeletonTheme}
-                        style={{ marginBottom: "20px" }}
-                      />
-                    ) : (
-                      teamData.name
-                    )}
-                  </h2>
                   {renderTeamStats(teamData)}
                   {renderUltimosJogos(teamData)}
                 </div>
