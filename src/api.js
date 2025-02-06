@@ -4,6 +4,25 @@ const API_HEADERS = {
   "x-apisports-key": import.meta.env.VITE_APISPORTS_KEY,
 };
 
+// Modifique a função formatSeasonForApi
+const formatSeasonForApi = (season, leagueId) => {
+  // Cache para armazenar quais ligas funcionam com qual formato
+  if (!window.leagueSeasonFormat) {
+    window.leagueSeasonFormat = {};
+  }
+
+  // Se já sabemos o formato que funciona para esta liga, use-o
+  if (window.leagueSeasonFormat[leagueId]) {
+    const format = window.leagueSeasonFormat[leagueId];
+    const year = season.split("-")[0];
+    return format === "full" ? `${year}-${parseInt(year) + 1}` : year;
+  }
+
+  // Se não sabemos, vamos tentar o formato ano simples primeiro
+  const year = season.split("-")[0];
+  return year;
+};
+
 export async function buscarJogosBasquete(teamId, season = "2023") {
   try {
     const response = await fetch(
@@ -39,16 +58,47 @@ export async function buscarLeagues() {
   }
 }
 
+// Modifique a função buscarTeams para lidar com a validação do formato
 export async function buscarTeams(leagueId, season) {
   try {
-    const response = await fetch(
-      `${BASE_URL}/teams?league=${leagueId}&season=${season}`,
+    let formattedSeason = formatSeasonForApi(season, leagueId);
+    let response = await fetch(
+      `${BASE_URL}/teams?league=${leagueId}&season=${formattedSeason}`,
       {
         headers: API_HEADERS,
       }
     );
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
+    let data = await response.json();
+
+    // Se não encontrou dados com o primeiro formato e ainda não sabemos o formato correto
+    if (
+      (!data.response || data.response.length === 0) &&
+      !window.leagueSeasonFormat[leagueId]
+    ) {
+      // Tente o outro formato
+      const year = formattedSeason;
+      formattedSeason = `${year}-${parseInt(year) + 1}`;
+
+      response = await fetch(
+        `${BASE_URL}/teams?league=${leagueId}&season=${formattedSeason}`,
+        {
+          headers: API_HEADERS,
+        }
+      );
+      data = await response.json();
+
+      // Salve o formato que funcionou
+      if (data.response && data.response.length > 0) {
+        window.leagueSeasonFormat[leagueId] = "full";
+      } else {
+        window.leagueSeasonFormat[leagueId] = "year";
+      }
+    } else if (data.response && data.response.length > 0) {
+      // Se funcionou com o primeiro formato, salve essa informação
+      window.leagueSeasonFormat[leagueId] = "year";
+    }
+
+    return data;
   } catch (error) {
     console.error("Erro ao buscar times:", error);
     throw error;
@@ -94,10 +144,11 @@ function calcularTotalSemOvertime(scores) {
   );
 }
 
+// Modifique as outras funções para usar o formato já conhecido
 export async function buscarEstatisticasTime(teamId, leagueId, season) {
   try {
-    const seasonYear = season.split("-")[0];
-    const url = `${BASE_URL}/games?team=${teamId}&league=${leagueId}&season=${seasonYear}`;
+    const formattedSeason = formatSeasonForApi(season, leagueId);
+    const url = `${BASE_URL}/games?team=${teamId}&league=${leagueId}&season=${formattedSeason}`;
 
     const response = await fetch(url, { headers: API_HEADERS });
     const data = await response.json();
@@ -192,10 +243,11 @@ export async function buscarEstatisticasTime(teamId, leagueId, season) {
   }
 }
 
+// Modifique as outras funções para usar o formato já conhecido
 export async function buscarUltimosJogos(teamId, season, leagueId) {
   try {
-    // Buscar jogos específicos da liga
-    const url = `${BASE_URL}/games?team=${teamId}&league=${leagueId}&season=${season}`;
+    const formattedSeason = formatSeasonForApi(season, leagueId);
+    const url = `${BASE_URL}/games?team=${teamId}&league=${leagueId}&season=${formattedSeason}`;
 
     const response = await fetch(url, {
       headers: API_HEADERS,
@@ -300,19 +352,16 @@ export async function buscarBets() {
     throw error;
   }
 }
-
 export function analisarOverUnder(games, linhaBet = 200.5) {
   if (!games || !Array.isArray(games)) {
     console.warn("Nenhum jogo disponível para análise", { games });
     return null;
   }
-
   try {
     const analise = games.reduce(
       (acc, game) => {
         const totalPontos =
           game.scores.home.totalSemOT + game.scores.away.totalSemOT;
-
         if (totalPontos > linhaBet) {
           acc.over.total++;
           acc.over.jogos.push({

@@ -22,6 +22,8 @@ import {
 } from "../api";
 import "../styles/BasketballStats.css";
 import AnaliseOverUnder from "./AnaliseOverUnder";
+import { StatusIndicator } from "./StatusIndicator";
+import { formatarData, formatTeamName } from "../utils/helper";
 
 // Add this constant at the top of the file for skeleton theme
 const skeletonTheme = {
@@ -44,7 +46,7 @@ const SelectorsWrapper = styled(Box)({
 const StyledFormControl = styled(FormControl)(() => ({
   width: "100%",
   marginBottom: "1rem",
-  maxWidth: { xs: "400px", md: "350px" }, // Adjust maxWidth for different screen sizes
+  maxWidth: { xs: "400px", md: "350px" },
 
   "& .MuiOutlinedInput-root": {
     backgroundColor: "rgba(26, 32, 44, 0.8)",
@@ -126,23 +128,6 @@ const preloadImage = (url) => {
   });
 };
 
-// Adicione este componente de status estilizado
-const StatusIndicator = styled("span")(({ status }) => ({
-  width: "8px",
-  height: "8px",
-  borderRadius: "50%",
-  display: "inline-block",
-  marginRight: "4px",
-  backgroundColor:
-    status === "finished"
-      ? "#48bb78" // verde para finalizado
-      : status === "live"
-      ? "#fc8181" // vermelho para ao vivo
-      : status === "scheduled"
-      ? "#f6e05e" // amarelo para agendado
-      : "#718096", // cinza para outros estados
-}));
-
 const StatusWrapper = styled("div")({
   display: "flex",
   alignItems: "center",
@@ -156,40 +141,35 @@ const StatusWrapper = styled("div")({
   margin: "0 auto",
 });
 
-// Adicione esta função de formatação de nomes
-const formatTeamName = (name) => {
-  // Mapa de abreviações comuns
-  const abbreviations = {
-    Philadelphia: "PHI",
-    Milwaukee: "MIL",
-    Boston: "BOS",
-    Lakers: "LAL",
-    Warriors: "GSW",
-    // Adicione mais conforme necessário
-  };
+// Add these helper functions near the top of the file with other utility functions
+const standardizeSeason = (seasonStr) => {
+  // If it's already in YYYY-YYYY format, return it
+  if (seasonStr.includes("-")) {
+    return seasonStr;
+  }
+  // If it's just a year, convert to YYYY-(YYYY+1) format
+  const year = parseInt(seasonStr);
+  return `${year}-${year + 1}`;
+};
 
-  // Se for um nome conhecido, usa a abreviação
-  for (const [full, abbr] of Object.entries(abbreviations)) {
-    if (name.includes(full)) return abbr;
+// Modifique a função existente ou adicione nova função
+const formatSeasonForApi = (seasonStr, leagueId) => {
+  // Lista de IDs de ligas que esperam o formato YYYY-YYYY
+  const leaguesRequiringFullSeason = [
+    1, // NBA
+    12, // ACB
+    // Adicione mais IDs conforme necessário
+  ];
+
+  const year = seasonStr.split("-")[0];
+
+  // Se a liga estiver na lista, retorna o formato completo YYYY-YYYY
+  if (leaguesRequiringFullSeason.includes(leagueId)) {
+    return `${year}-${parseInt(year) + 1}`;
   }
 
-  // Se o nome tiver mais de 15 caracteres, abrevia
-  if (name.length > 15) {
-    const words = name.split(" ");
-    if (words.length > 1) {
-      // Pega a primeira letra de cada palavra, exceto a última
-      return (
-        words
-          .slice(0, -1)
-          .map((word) => word[0])
-          .join("") +
-        " " +
-        words[words.length - 1]
-      );
-    }
-  }
-
-  return name;
+  // Caso contrário, retorna apenas o ano
+  return year;
 };
 
 function BasketballStats() {
@@ -205,7 +185,7 @@ function BasketballStats() {
   const [error, setError] = useState(null);
   const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [season, setSeason] = useState("2024-2025"); // Change initial value to full season string
+  const [season, setSeason] = useState("2024-2025");
   const [seasons, setSeasons] = useState([]);
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [selectedTeams, setSelectedTeams] = useState({
@@ -221,20 +201,6 @@ function BasketballStats() {
   const updateLoadingState = (key, value) => {
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
   };
-
-  const formatarData = useCallback((dataString) => {
-    try {
-      const data = new Date(dataString);
-      return data.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    } catch (e) {
-      console.error("Erro ao formatar data:", e);
-      return "Data inválida";
-    }
-  }, []);
 
   // Modifique a função calcularComparacao para incluir a diferença da média
   const calcularComparacao = useCallback(
@@ -287,7 +253,7 @@ function BasketballStats() {
         diferencaDaMedia: comp.totalCombinado - media,
       }));
     },
-    [selectedTeams, formatarData]
+    [selectedTeams]
   );
 
   const calcularTotaisJogos = (games) => {
@@ -730,8 +696,12 @@ function BasketballStats() {
       try {
         const data = await buscarSeasons();
         if (data.response && data.response.length > 0) {
-          setSeasons(data.response);
-          setSeason(data.response[0]);
+          // Standardize all seasons to YYYY-YYYY format
+          const standardizedSeasons = data.response.map((season) =>
+            standardizeSeason(season)
+          );
+          setSeasons(standardizedSeasons);
+          setSeason(standardizedSeasons[0]);
         }
       } catch (e) {
         console.error(e);
@@ -743,22 +713,15 @@ function BasketballStats() {
     fetchSeasons();
   }, []);
 
-  // Add a helper function to extract year
-  const getYearFromSeason = (seasonStr) => {
-    return seasonStr.split("-")[0];
-  };
-
   useEffect(() => {
     async function fetchTeams() {
       if (!selectedLeague) return;
       updateLoadingState("teams", true);
       try {
         setLoading(true);
-        // Use the extracted year for the API call
-        const data = await buscarTeams(
-          selectedLeague.id,
-          getYearFromSeason(season)
-        );
+        // Use a nova função para formatar a temporada
+        const formattedSeason = formatSeasonForApi(season, selectedLeague.id);
+        const data = await buscarTeams(selectedLeague.id, formattedSeason);
 
         if (!data.response || data.response.length === 0) {
           setError(
@@ -789,28 +752,29 @@ function BasketballStats() {
       setLoading(true);
 
       try {
-        const yearFromSeason = getYearFromSeason(season);
+        // Use a nova função para formatar a temporada
+        const formattedSeason = formatSeasonForApi(season, selectedLeague.id);
         const [team1Games, team2Games, team1Stats, team2Stats] =
           await Promise.all([
             buscarUltimosJogos(
               selectedTeams.team1.id,
-              yearFromSeason,
+              formattedSeason,
               selectedLeague.id
             ),
             buscarUltimosJogos(
               selectedTeams.team2.id,
-              yearFromSeason,
+              formattedSeason,
               selectedLeague.id
             ),
             buscarEstatisticasTime(
               selectedTeams.team1.id,
               selectedLeague.id,
-              yearFromSeason
+              formattedSeason
             ),
             buscarEstatisticasTime(
               selectedTeams.team2.id,
               selectedLeague.id,
-              yearFromSeason
+              formattedSeason
             ),
           ]);
 
