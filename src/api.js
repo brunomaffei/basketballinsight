@@ -45,15 +45,35 @@ export async function buscarJogosBasquete(teamId, season = "2023") {
   }
 }
 
-export async function buscarLeagues() {
+export async function buscarLeagues(countryId = null) {
   try {
-    const response = await fetch(`${BASE_URL}/leagues`, {
+    let url = `${BASE_URL}/leagues`;
+    if (countryId) {
+      url += `?country_id=${countryId}`;
+    }
+
+    const response = await fetch(url, {
       headers: API_HEADERS,
     });
+
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error("Erro ao buscar ligas:", error);
+    throw error;
+  }
+}
+
+export async function buscarCountries() {
+  try {
+    const response = await fetch(`${BASE_URL}/countries`, {
+      headers: API_HEADERS,
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Erro ao buscar países:", error);
     throw error;
   }
 }

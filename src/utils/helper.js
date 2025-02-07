@@ -46,3 +46,49 @@ export const formatarData = (dataString) => {
     return "Data inválida";
   }
 };
+
+export const standardizeSeason = (seasonStr) => {
+  // If it's already in YYYY-YYYY format, return it
+  if (seasonStr.includes("-")) {
+    return seasonStr;
+  }
+  const year = parseInt(seasonStr);
+  return `${year}-${year + 1}`;
+};
+
+export const formatSeasonForApi = (seasonStr, leagueId) => {
+  const leaguesRequiringFullSeason = [1, 12];
+  const year = seasonStr.split("-")[0];
+  if (leaguesRequiringFullSeason.includes(leagueId)) {
+    return `${year}-${parseInt(year) + 1}`;
+  }
+  return year;
+};
+
+export const calcularTotaisJogos = (games) => {
+  if (!games || games.length === 0)
+    return { pontosFeitos: 0, pontosSofridos: 0, total: 0 };
+
+  return games.reduce(
+    (acc, game) => {
+      const isHome = game.teams.home.id === game.id;
+      const pontosFeitos = isHome
+        ? game.scores.home.total
+        : game.scores.away.total;
+      const pontosSofridos = isHome
+        ? game.scores.away.total
+        : game.scores.home.total;
+
+      return {
+        pontosFeitos: acc.pontosFeitos + pontosFeitos,
+        pontosSofridos: acc.pontosSofridos + pontosSofridos,
+        total: acc.total + pontosFeitos + pontosSofridos,
+      };
+    },
+    { pontosFeitos: 0, pontosSofridos: 0, total: 0 }
+  );
+};
+
+export const calcularTotalPartida = (game) => {
+  return game.scores.home.totalSemOT + game.scores.away.totalSemOT;
+};

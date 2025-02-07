@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import {
@@ -23,9 +24,16 @@ import {
 import "../styles/BasketballStats.css";
 import AnaliseOverUnder from "./AnaliseOverUnder";
 import { StatusIndicator } from "./StatusIndicator";
-import { formatarData, formatTeamName } from "../utils/helper";
+import {
+  calcularTotaisJogos,
+  calcularTotalPartida,
+  formatarData,
+  formatSeasonForApi,
+  formatTeamName,
+  standardizeSeason,
+} from "../utils/helper";
+import Selectors from "./Selector";
 
-// Add this constant at the top of the file for skeleton theme
 const skeletonTheme = {
   baseColor: "rgba(26, 32, 44, 0.3)",
   highlightColor: "rgba(44, 55, 82, 0.3)",
@@ -141,47 +149,13 @@ const StatusWrapper = styled("div")({
   margin: "0 auto",
 });
 
-// Add these helper functions near the top of the file with other utility functions
-const standardizeSeason = (seasonStr) => {
-  // If it's already in YYYY-YYYY format, return it
-  if (seasonStr.includes("-")) {
-    return seasonStr;
-  }
-  // If it's just a year, convert to YYYY-(YYYY+1) format
-  const year = parseInt(seasonStr);
-  return `${year}-${year + 1}`;
-};
-
-// Modifique a função existente ou adicione nova função
-const formatSeasonForApi = (seasonStr, leagueId) => {
-  // Lista de IDs de ligas que esperam o formato YYYY-YYYY
-  const leaguesRequiringFullSeason = [
-    1, // NBA
-    12, // ACB
-    // Adicione mais IDs conforme necessário
-  ];
-
-  const year = seasonStr.split("-")[0];
-
-  // Se a liga estiver na lista, retorna o formato completo YYYY-YYYY
-  if (leaguesRequiringFullSeason.includes(leagueId)) {
-    return `${year}-${parseInt(year) + 1}`;
-  }
-
-  // Caso contrário, retorna apenas o ano
-  return year;
-};
-
 function BasketballStats() {
-  // Loading states
   const [loadingStates, setLoadingStates] = useState({
     leagues: true,
     seasons: true,
     teams: false,
     gameData: false,
   });
-
-  // State definitions (alphabetically ordered)
   const [error, setError] = useState(null);
   const [leagues, setLeagues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -256,34 +230,6 @@ function BasketballStats() {
     [selectedTeams]
   );
 
-  const calcularTotaisJogos = (games) => {
-    if (!games || games.length === 0)
-      return { pontosFeitos: 0, pontosSofridos: 0, total: 0 };
-
-    return games.reduce(
-      (acc, game) => {
-        const isHome = game.teams.home.id === game.id;
-        const pontosFeitos = isHome
-          ? game.scores.home.total
-          : game.scores.away.total;
-        const pontosSofridos = isHome
-          ? game.scores.away.total
-          : game.scores.home.total;
-
-        return {
-          pontosFeitos: acc.pontosFeitos + pontosFeitos,
-          pontosSofridos: acc.pontosSofridos + pontosSofridos,
-          total: acc.total + pontosFeitos + pontosSofridos,
-        };
-      },
-      { pontosFeitos: 0, pontosSofridos: 0, total: 0 }
-    );
-  };
-
-  const calcularTotalPartida = (game) => {
-    return game.scores.home.totalSemOT + game.scores.away.totalSemOT;
-  };
-
   // Modifique a função getGameStatus
   const getGameStatus = (status) => {
     switch (status.short) {
@@ -327,13 +273,6 @@ function BasketballStats() {
           </StatusWrapper>
         );
     }
-  };
-
-  const handleLeagueSelect = (event) => {
-    const selectedValue = event.target.value;
-    const league = selectedValue ? JSON.parse(selectedValue) : null;
-    setSelectedLeague(league);
-    setSelectedTeams({ team1: null, team2: null });
   };
 
   const handleTeamSelect = (team, position) => {
@@ -840,8 +779,13 @@ function BasketballStats() {
     children: PropTypes.node.isRequired,
   };
 
-  // Add this sorting function
-  const sortedLeagues = leagues.sort((a, b) => a.name.localeCompare(b.name));
+  const handleSelectionsChange = ({ year, league }) => {
+    if (year) setSeason(year);
+    if (league !== undefined) {
+      setSelectedLeague(league);
+      setSelectedTeams({ team1: null, team2: null });
+    }
+  };
 
   // Return statement (main render)
   if (error) return <div className="error">{error}</div>;
@@ -859,109 +803,7 @@ function BasketballStats() {
           alignItems: "center",
         }}
       >
-        {/* New wrapper for season and league selectors */}
-        <SelectorsWrapper>
-          <LoadingIndicator loading={loadingStates.seasons}>
-            <StyledFormControl>
-              <InputLabel>Selecione a Temporada</InputLabel>
-              <Select
-                value={season} // Use full season string as value
-                onChange={(e) => setSeason(e.target.value)} // Store full season string
-                disabled={loadingStates.seasons || loadingStates.leagues}
-                label="Selecione a Temporada"
-                MenuProps={MenuProps}
-              >
-                {seasons.map((seasonOption) => (
-                  <StyledMenuItem key={seasonOption} value={seasonOption}>
-                    {seasonOption}
-                  </StyledMenuItem>
-                ))}
-              </Select>
-            </StyledFormControl>
-          </LoadingIndicator>
-
-          <LoadingIndicator loading={loadingStates.leagues}>
-            <StyledFormControl>
-              <InputLabel>Selecione a Liga</InputLabel>
-              <Select
-                value={selectedLeague ? JSON.stringify(selectedLeague) : ""}
-                onChange={handleLeagueSelect}
-                disabled={loadingStates.leagues || loadingStates.seasons}
-                label="Selecione a Liga"
-                MenuProps={MenuProps}
-                renderValue={(selected) => {
-                  if (!selected) return "Escolha uma liga";
-                  const league = JSON.parse(selected);
-                  return (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography
-                        component="span"
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          width: 24,
-                          height: 24,
-                          justifyContent: "center",
-                          fontSize: "1.2rem",
-                        }}
-                      >
-                        {league.logo ? (
-                          <img
-                            src={league.logo}
-                            alt={league.name}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "contain",
-                            }}
-                          />
-                        ) : (
-                          BASKETBALL_EMOJI
-                        )}
-                      </Typography>
-                      {league.name}
-                    </Box>
-                  );
-                }}
-              >
-                <StyledMenuItem value="">Escolha uma liga</StyledMenuItem>
-                {sortedLeagues.map((league) => (
-                  <StyledMenuItem
-                    key={league.id}
-                    value={JSON.stringify(league)}
-                  >
-                    <Typography
-                      component="span"
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        width: 24,
-                        height: 24,
-                        justifyContent: "center",
-                        fontSize: "1.2rem",
-                      }}
-                    >
-                      {league.logo ? (
-                        <img
-                          src={league.logo}
-                          alt={league.name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain",
-                          }}
-                        />
-                      ) : (
-                        BASKETBALL_EMOJI
-                      )}
-                    </Typography>
-                    {league.name}
-                  </StyledMenuItem>
-                ))}
-              </Select>
-            </StyledFormControl>
-          </LoadingIndicator>
-        </SelectorsWrapper>
+        <Selectors onSelectionsChange={handleSelectionsChange} />
 
         {selectedLeague && (
           <LoadingIndicator loading={loadingStates.teams}>
