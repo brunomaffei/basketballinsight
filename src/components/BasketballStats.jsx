@@ -198,6 +198,19 @@ function BasketballStats() {
     window.location.reload();
   };
 
+  // Adicione esta função resetData antes de ser usada
+  const resetData = useCallback(() => {
+    setTeam1Data(null);
+    setTeam2Data(null);
+    setSelectedTeams({ team1: null, team2: null });
+    setMediaGeral(null);
+    setProximoJogo(null);
+    setHistoricoTime1(null);
+    setLinhasOverUnder({});
+    setIsDataFetching(false);
+    setError(null);
+  }, []);
+
   // Modifique a função calcularComparacao para incluir a diferença da média
   const calcularComparacao = useCallback(
     (team1Games, team2Games) => {
@@ -299,7 +312,7 @@ function BasketballStats() {
       setSelectedTeams(prev => ({ ...prev, team1: team }));
       
       try {
-        // Apenas busca e mostra o próximo jogo
+        // Busca o próximo jogo assim que o time favorito é selecionado
         const nextGame = await buscarProximoJogo(
           team.id,
           selectedLeague.id,
@@ -308,6 +321,17 @@ function BasketballStats() {
         
         if (nextGame) {
           setProximoJogo(nextGame);
+          
+          // Encontre o time adversário na lista de times
+          const opponent = teams.find(t => t.id === nextGame.opponent.id);
+          if (opponent) {
+            // Auto seleciona o time adversário se ele estiver disponível
+            setSelectedTeams(prev => ({
+              ...prev,
+              team1: team,
+              team2: opponent
+            }));
+          }
         }
       } catch (error) {
         console.error("Erro ao buscar próximo jogo:", error);
@@ -693,10 +717,11 @@ function BasketballStats() {
   useEffect(() => {
     async function fetchTeams() {
       if (!selectedLeague) return;
+      
       updateLoadingState("teams", true);
+      setLoading(true);
+      
       try {
-        setLoading(true);
-        // Use a nova função para formatar a temporada
         const formattedSeason = formatSeasonForApi(season, selectedLeague.id);
         const data = await buscarTeams(selectedLeague.id, formattedSeason);
 
@@ -712,24 +737,24 @@ function BasketballStats() {
       } catch (e) {
         setError(`Erro ao carregar times: ${e.message}`);
         setTeams([]);
+        resetData(); // Limpa os dados em caso de erro
       } finally {
         updateLoadingState("teams", false);
+        setLoading(false);
       }
     }
-    if (selectedLeague) {
-      fetchTeams();
-    }
-  }, [selectedLeague, season]);
+
+    fetchTeams();
+  }, [selectedLeague, season, resetData]);
 
   useEffect(() => {
     async function fetchTeamData() {
-      if (!selectedTeams.team1 || !selectedTeams.team2) return;
+      if (!selectedTeams.team1 || !selectedTeams.team2 || !selectedLeague || !season) return;
 
       setIsDataFetching(true);
       setLoading(true);
 
       try {
-        // Use a nova função para formatar a temporada
         const formattedSeason = formatSeasonForApi(season, selectedLeague.id);
         const [team1Games, team2Games, team1Stats, team2Stats] =
           await Promise.all([
@@ -755,30 +780,34 @@ function BasketballStats() {
             ),
           ]);
 
-        setTeam1Data({
-          ...selectedTeams.team1,
-          games: team1Games.response,
-          stats: team1Stats.response,
-        });
+        // Verifica se os dados são válidos antes de atualizar o estado
+        if (team1Games.response && team2Games.response) {
+          setTeam1Data({
+            ...selectedTeams.team1,
+            games: team1Games.response,
+            stats: team1Stats.response,
+          });
 
-        setTeam2Data({
-          ...selectedTeams.team2,
-          games: team2Games.response,
-          stats: team2Stats.response,
-        });
+          setTeam2Data({
+            ...selectedTeams.team2,
+            games: team2Games.response,
+            stats: team2Stats.response,
+          });
+        } else {
+          throw new Error("Dados inválidos recebidos da API");
+        }
       } catch (e) {
         setError(`Erro ao carregar dados dos times: ${e.message}`);
         console.error("Erro detalhado:", e);
+        resetData(); // Limpa os dados em caso de erro
       } finally {
         setLoading(false);
-        setIsDataFetching(false); // Reset after fetch completes
+        setIsDataFetching(false);
       }
     }
 
-    if (selectedTeams.team1 && selectedTeams.team2) {
-      fetchTeamData();
-    }
-  }, [selectedTeams, selectedLeague, season]);
+    fetchTeamData();
+  }, [selectedTeams, selectedLeague, season, resetData]);
 
   // Add useEffect for mediaGeral calculation
   useEffect(() => {
@@ -818,10 +847,15 @@ function BasketballStats() {
   };
 
   const handleSelectionsChange = ({ year, league }) => {
-    if (year) setSeason(year);
+    if (year) {
+      setSeason(year);
+      // Limpa os dados quando muda a temporada
+      resetData();
+    }
     if (league !== undefined) {
       setSelectedLeague(league);
-      setSelectedTeams({ team1: null, team2: null });
+      setTeams([]); // Limpa os times ao trocar de liga
+      resetData();
     }
   };
 
@@ -1043,56 +1077,40 @@ function BasketballStats() {
       )}
 
       {!isDataFetching && team1Data && team2Data && (
-        <>
-          <div className="stats-tables-container">
-            {[team1Data, team2Data].map((teamData) => {
-              return (
-                <div key={teamData.id} className="team-data-container">
-                  {renderTeamStats(teamData)}
-                  {renderUltimosJogos(teamData)}
-                </div>
-              );
-            })}
+        <div className="stats-tables-container">
+          {/* Teams Row - Both teams side by side */}
+          <div className="teams-row">
+            <div className="team-data-container">
+              {renderTeamStats(team1Data)}
+              {renderUltimosJogos(team1Data)}
+            </div>
+            <div className="team-data-container">
+              {renderTeamStats(team2Data)}
+              {renderUltimosJogos(team2Data)}
+            </div>
           </div>
 
-          {/* Render comparison first */}
-          {loading ? (
-            <div style={{ margin: "20px 0" }}>
-              <Skeleton
-                count={5}
-                height={40}
-                {...skeletonTheme}
-                style={{ marginBottom: "12px" }}
-              />
-            </div>
-          ) : (
-            renderComparacao()
-          )}
+          {/* Comparison Row - Full width */}
+          <div className="comparison-row">
+            {!loading && renderComparacao()}
+          </div>
 
-          {/* Then render Over/Under analysis */}
-          <div className="stats-tables-container"></div>
-            {[team1Data, team2Data].map((teamData) => (
-              <div key={teamData.id}>
-                {loading ? (
-                  <div style={{ margin: "20px 0" }}>
-                    <Skeleton
-                      count={3}
-                      height={40}
-                      {...skeletonTheme}
-                      style={{ marginBottom: "12px" }}
-                    />
-                  </div>
-                ) : (
-                  <AnaliseOverUnder
-                    games={teamData.games}
-                    teamId={teamData.id}
-                    defaultLinha={linhasOverUnder[teamData.id] || 200.5}
-                    onLinhaChange={(novaLinha) => handleLinhaChange(novaLinha, teamData.id)}
-                  />
-                )}
-              </div>
-            ))}
-        </>
+          {/* Analysis Row - Over/Under analysis side by side */}
+          <div className="analysis-row">
+            <AnaliseOverUnder
+              games={team1Data.games}
+              teamId={team1Data.id}
+              defaultLinha={linhasOverUnder[team1Data.id] || 200.5}
+              onLinhaChange={(novaLinha) => handleLinhaChange(novaLinha, team1Data.id)}
+            />
+            <AnaliseOverUnder
+              games={team2Data.games}
+              teamId={team2Data.id}
+              defaultLinha={linhasOverUnder[team2Data.id] || 200.5}
+              onLinhaChange={(novaLinha) => handleLinhaChange(novaLinha, team2Data.id)}
+            />
+          </div>
+        </div>
       )}
       {historicoTime1 && renderHistorico()}
     </div>

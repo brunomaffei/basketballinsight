@@ -122,7 +122,7 @@ function AnaliseOverUnder({ games, teamId, defaultLinha, onLinhaChange }) {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2, width: "100%" }}>
       <Paper
         elevation={0}
         sx={{
