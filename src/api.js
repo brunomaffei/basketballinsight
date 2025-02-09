@@ -343,7 +343,7 @@ export async function buscarBets() {
     throw error;
   }
 }
-export function analisarOverUnder(games, linhaBet = 200.5) {
+export function analisarOverUnder(games, linhaBet = 0) {
   if (!games || !Array.isArray(games)) {
     console.warn("Nenhum jogo disponível para análise", { games });
     return null;
@@ -385,6 +385,111 @@ export function analisarOverUnder(games, linhaBet = 200.5) {
     return analise;
   } catch (error) {
     console.error("Erro ao analisar Over/Under:", error);
+    return null;
+  }
+}
+
+export async function buscarProximoJogo(teamId, leagueId, season) {
+  try {
+    const formattedSeason = formatSeasonForApi(season, leagueId);
+    const url = `${BASE_URL}/games?team=${teamId}&league=${leagueId}&season=${formattedSeason}`;
+
+    const response = await fetch(url, {
+      headers: API_HEADERS,
+    });
+
+    const data = await response.json();
+
+    if (data.response && Array.isArray(data.response)) {
+      const now = new Date();
+      // Filter future games and sort by date
+      const proximosJogos = data.response
+        .filter(game => {
+          const gameDate = new Date(game.date);
+          return gameDate > now;
+        })
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      if (proximosJogos.length > 0) {
+        const proximoJogo = proximosJogos[0];
+        // Return opponent team based on selected team
+        const opponent = proximoJogo.teams.home.id === parseInt(teamId) 
+          ? proximoJogo.teams.away 
+          : proximoJogo.teams.home;
+
+        return {
+          opponent,
+          date: proximoJogo.date,
+          gameId: proximoJogo.id
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Erro ao buscar próximo jogo:", error);
+    return null;
+  }
+}
+
+export async function buscarHistoricoEProximoJogo(teamId, leagueId, season) {
+  try {
+    const formattedSeason = formatSeasonForApi(season, leagueId);
+    const url = `${BASE_URL}/games?team=${teamId}&league=${leagueId}&season=${formattedSeason}`;
+
+    const response = await fetch(url, { headers: API_HEADERS });
+    const data = await response.json();
+
+    if (data.response && Array.isArray(data.response)) {
+      const now = new Date();
+      const games = data.response;
+
+      // Separar jogos passados e futuros
+      const jogosPassados = games
+        .filter(game => new Date(game.date) < now)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      const proximosJogos = games
+        .filter(game => new Date(game.date) > now)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const proximoJogo = proximosJogos[0];
+      const ultimosJogos = jogosPassados.slice(0, 5);
+
+      if (proximoJogo) {
+        const opponent = proximoJogo.teams.home.id === parseInt(teamId)
+          ? proximoJogo.teams.away
+          : proximoJogo.teams.home;
+
+        // Calcular médias dos últimos jogos
+        const mediasUltimosJogos = ultimosJogos.reduce((acc, game) => {
+          const isHome = game.teams.home.id === parseInt(teamId);
+          const pontosFeitos = isHome ? game.scores.home.total : game.scores.away.total;
+          const pontosSofridos = isHome ? game.scores.away.total : game.scores.home.total;
+          
+          acc.totalPontosFeitos += pontosFeitos;
+          acc.totalPontosSofridos += pontosSofridos;
+          return acc;
+        }, { totalPontosFeitos: 0, totalPontosSofridos: 0 });
+
+        return {
+          proximoJogo: {
+            opponent,
+            date: proximoJogo.date,
+            gameId: proximoJogo.id
+          },
+          historico: {
+            jogos: ultimosJogos,
+            mediaPontosFeitos: mediasUltimosJogos.totalPontosFeitos / ultimosJogos.length,
+            mediaPontosSofridos: mediasUltimosJogos.totalPontosSofridos / ultimosJogos.length
+          }
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Erro ao buscar próximo jogo e histórico:", error);
     return null;
   }
 }

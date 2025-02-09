@@ -66,8 +66,8 @@ const formatarData = (data) => {
   });
 };
 
-function AnaliseOverUnder({ games, defaultLinha }) {
-  const [linhaBet, setLinhaBet] = useState(defaultLinha || 200.5);
+function AnaliseOverUnder({ games, teamId, defaultLinha, onLinhaChange }) {
+  const [linhaBet, setLinhaBet] = useState(defaultLinha || 0);
   const [analise, setAnalise] = useState(null);
 
   useEffect(() => {
@@ -115,6 +115,12 @@ function AnaliseOverUnder({ games, defaultLinha }) {
   const overPercentage = ((analise.over.total / totalJogos) * 100).toFixed(1);
   const underPercentage = ((analise.under.total / totalJogos) * 100).toFixed(1);
 
+  const handleLinhaChange = (e) => {
+    const novoValor = parseFloat(e.target.value || 0);
+    setLinhaBet(novoValor);
+    onLinhaChange?.(novoValor, teamId); // Passar o teamId junto
+  };
+
   return (
     <Box sx={{ p: 2 }}>
       <Paper
@@ -135,7 +141,7 @@ function AnaliseOverUnder({ games, defaultLinha }) {
         </Typography>
         <TextField
           value={linhaBet}
-          onChange={(e) => setLinhaBet(parseFloat(e.target.value || 0))}
+          onChange={handleLinhaChange}
           type="number"
           inputProps={{ step: "0.5" }}
           variant="outlined"
@@ -308,12 +314,14 @@ function AnaliseOverUnder({ games, defaultLinha }) {
 
 AnaliseOverUnder.propTypes = {
   games: PropTypes.array,
+  teamId: PropTypes.number,
   defaultLinha: PropTypes.number,
+  onLinhaChange: PropTypes.func,
 };
 
 AnaliseOverUnder.defaultProps = {
   games: [],
-  defaultLinha: 200.5,
+  defaultLinha: 0,
 };
 
 export default AnaliseOverUnder;

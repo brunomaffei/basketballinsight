@@ -18,15 +18,72 @@
   -moz-osx-font-smoothing: grayscale;
   --primary-text: #e4e6f0;
   --secondary-text: #a5b4fc;
-  --background-dark: #1a1f35;
+  --background-dark: #131722;
   --background-light: #2d3756;
   --surface-dark: rgba(26, 32, 44, 0.95);
   --surface-light: rgba(255, 255, 255, 0.05);
   --border-color: rgba(255, 255, 255, 0.1);
-  --success-color: #48bb78;
-  --error-color: #fc8181;
+  --success-color: #4BB543;
+  --error-color: #FF4B1F;
   --font-primary: "Poppins", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-secondary: "Inter", sans-serif;
+  --primary-gradient: linear-gradient(135deg, #FF4B1F 0%, #FF9068 100%);
+  --secondary-gradient: linear-gradient(135deg, #1A2035 0%, #242B45 100%);
+  --accent-color: #FFD700;
+  --text-primary: #ffffff;
+  --text-secondary: #8B8B8B;
+
+  /* Nova paleta de cores */
+  --primary-gradient: linear-gradient(135deg, #FF4B1F 0%, #FF9068 100%);
+  --secondary-gradient: linear-gradient(135deg, #1A2035 0%, #242B45 100%);
+  --accent-color: #FFD700;
+  --background-dark: #131722;
+  --background-light: #1A2035;
+  --success-color: #4BB543;
+  --error-color: #FF4B1F;
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  
+  /* Adicionando animação de rotação */
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Nova paleta de cores mais alaranjada */
+  --primary-orange: #FF4B1F;
+  --secondary-orange: #FF8C42;
+  --accent-orange: #FFA07A;
+  --light-orange: #FFD8A8;
+  --dark-orange: #CC3D19;
+  
+  /* Gradientes atualizados */
+  --primary-gradient: linear-gradient(135deg, #FF4B1F 0%, #FF8C42 100%);
+  --secondary-gradient: linear-gradient(135deg, #1A2035 0%, #2C3E50 100%);
+  --accent-gradient: linear-gradient(135deg, #FF8C42 0%, #FFA07A 100%);
+  
+  /* Cores de base atualizadas */
+  --background-dark: #131722;
+  --background-light: #1A2035;
+  --surface-dark: rgba(26, 32, 44, 0.95);
+  --surface-light: rgba(255, 140, 66, 0.1);
+  
+  /* Cores de estado */
+  --success-color: #4BB543;
+  --error-color: #FF4B1F;
+  --warning-color: #FF8C42;
+  
+  /* Cores de texto */
+  --text-primary: #ffffff;
+  --text-secondary: #FFD8A8;
+  --text-muted: rgba(255, 216, 168, 0.7);
+
+  /* Nova paleta de cores */
+  --background: #121212;
+  --primary: #BB86FC;
+  --secondary: #3700B3;
+  --accent: #03DAC6;
+  --text: #FFFFFF;
 }
 
 * {
@@ -53,12 +110,8 @@ a:hover {
 body {
   font-family: var(--font-primary);
   line-height: 1.6;
-  color: var(--primary-text);
-  background: linear-gradient(
-    135deg,
-    var(--background-dark) 0%,
-    var(--background-light) 100%
-  );
+  color: var(--text-primary);
+  background: var(--background-dark);
   min-height: 100vh;
   margin: 0;
   padding: 0;
@@ -66,6 +119,8 @@ body {
   display: flex;
   place-items: center;
   min-width: 320px;
+  background-color: var(--background);
+  color: var(--text);
 }
 
 #root {
@@ -109,16 +164,16 @@ h1 {
 }
 
 .card {
-  background: var(--surface-dark);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(145deg, rgba(26, 32, 53, 0.95) 0%, rgba(36, 43, 69, 0.95) 100%);
+  border: 1px solid rgba(255, 75, 31, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
 }
 
 .card:hover {
   transform: translateY(-5px);
+  border-color: rgba(255, 75, 31, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
 }
 
 input,
@@ -270,4 +325,33 @@ button:focus-visible {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-color);
+}
+
+/* Estilos globais para tabelas */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+th,
+td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+th {
+  background-color: var(--secondary);
+  color: var(--text);
+  font-weight: bold;
+}
+
+/* Estilos para telas menores */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 }
