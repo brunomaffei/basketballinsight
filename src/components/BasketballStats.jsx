@@ -896,7 +896,7 @@ function BasketballStats() {
       } catch (e) {
         setError(`Erro ao carregar dados dos times: ${e.message}`);
         console.error("Erro detalhado:", e);
-        resetData(); // Limpa os dados em caso de erro
+        resetData();
       } finally {
         setLoading(false);
         setIsDataFetching(false);
@@ -919,7 +919,7 @@ function BasketballStats() {
         setMediaGeral(parseFloat(calculatedMedia));
       }
     }
-  }, [team1Data, team2Data, selectedTeams, linhasOverUnder]);
+  }, [team1Data, team2Data, selectedTeams, linhasOverUnder, calcularComparacao]);
 
   const LoadingIndicator = ({ loading, children }) => (
     <Box className="select-wrapper">
@@ -946,12 +946,11 @@ function BasketballStats() {
   const handleSelectionsChange = ({ year, league }) => {
     if (year) {
       setSeason(year);
-      // Limpa os dados quando muda a temporada
       resetData();
     }
     if (league !== undefined) {
       setSelectedLeague(league);
-      setTeams([]); // Limpa os times ao trocar de liga
+      setTeams([]);
       resetData();
     }
   };
@@ -995,7 +994,6 @@ function BasketballStats() {
   // Atualizar o valor da linha quando mudar no AnaliseOverUnder
   const handleLinhaChange = (novaLinha) => {
     setLinhaGlobal(novaLinha);
-    // Atualiza todas as linhas com o mesmo valor
     setLinhasOverUnder(prev => ({
       ...prev,
       [selectedTeams.team1?.id]: novaLinha,
@@ -1238,37 +1236,62 @@ function BasketballStats() {
   };
 
   // Adicione este componente para o input global
-  const LinhaGlobalInput = () => (
-    <div className="linha-global-container" style={{
-      background: 'rgba(26, 32, 44, 0.8)',
-      padding: '1rem',
-      borderRadius: '8px',
-      marginBottom: '1rem',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '1rem'
-    }}>
-      <label style={{ color: '#a5b4fc', fontWeight: 'bold' }}>
-        Linha O/U Global:
-      </label>
-      <input
-        type="number"
-        step="0.5"
-        value={linhaGlobal}
-        onChange={(e) => handleLinhaChange(parseFloat(e.target.value))}
-        style={{
-          background: 'rgba(44, 55, 82, 0.9)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '4px',
-          padding: '0.5rem',
-          color: '#fff',
-          width: '100px',
-          textAlign: 'center'
-        }}
-      />
-    </div>
-  );
+  const LinhaGlobalInput = () => {
+    const [inputValue, setInputValue] = useState(linhaGlobal.toString().replace('.', ','));
+
+    const handleInputChange = (e) => {
+      const value = e.target.value.replace(/[^0-9,]/g, '');
+      setInputValue(value);
+    };
+
+    const handleBlur = () => {
+      const parsedValue = parseFloat(inputValue.replace(',', '.'));
+      if (!isNaN(parsedValue)) {
+        handleLinhaChange(parsedValue);
+        setInputValue(parsedValue.toString().replace('.', ','));
+      } else {
+        setInputValue(linhaGlobal.toString().replace('.', ','));
+      }
+    };
+
+    return (
+      <div className="linha-global-container" style={{
+        background: 'rgba(26, 32, 44, 0.8)',
+        padding: '1rem',
+        borderRadius: '8px',
+        marginBottom: '1rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '1rem'
+      }}>
+        <label style={{ color: '#a5b4fc', fontWeight: 'bold' }}>
+          Linha O/U Global:
+        </label>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.target.blur();
+            }
+          }}
+          style={{
+            background: 'rgba(44, 55, 82, 0.9)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '4px',
+            padding: '0.5rem',
+            color: '#fff',
+            width: '100px',
+            textAlign: 'center',
+            fontSize: '1rem'
+          }}
+        />
+      </div>
+    );
+  };
 
   // Return statement (main render)
   if (error) {
