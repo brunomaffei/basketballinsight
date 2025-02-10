@@ -66,20 +66,20 @@ const formatarData = (data) => {
   });
 };
 
-function AnaliseOverUnder({ games, teamId, defaultLinha, onLinhaChange }) {
-  const [linhaBet, setLinhaBet] = useState(defaultLinha || 0);
+const AnaliseOverUnder = ({ games, teamId, defaultLinha, onLinhaChange, disableLinhaInput = false }) => {
+  const [linha, setLinha] = useState(defaultLinha);
   const [analise, setAnalise] = useState(null);
 
   useEffect(() => {
     if (defaultLinha) {
-      setLinhaBet(defaultLinha);
+      setLinha(defaultLinha);
     }
   }, [defaultLinha]);
 
   useEffect(() => {
     const fazerAnalise = async () => {
       try {
-        const resultado = await analisarOverUnder(games, linhaBet);
+        const resultado = await analisarOverUnder(games, linha);
         setAnalise(resultado);
       } catch (error) {
         console.error("Erro na análise:", error);
@@ -89,7 +89,7 @@ function AnaliseOverUnder({ games, teamId, defaultLinha, onLinhaChange }) {
     if (games && games.length > 0) {
       fazerAnalise();
     }
-  }, [games, linhaBet]);
+  }, [games, linha]);
 
   if (!games || games.length === 0) {
     return (
@@ -117,47 +117,49 @@ function AnaliseOverUnder({ games, teamId, defaultLinha, onLinhaChange }) {
 
   const handleLinhaChange = (e) => {
     const novoValor = parseFloat(e.target.value || 0);
-    setLinhaBet(novoValor);
+    setLinha(novoValor);
     onLinhaChange?.(novoValor, teamId); // Passar o teamId junto
   };
 
   return (
     <Box sx={{ p: 2, width: "100%" }}>
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2,
-          mb: 3,
-          background: "#212939",
-          borderRadius: 2,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 2,
-        }}
-      >
-        <Typography variant="h6" component="label" sx={{ color: "#fff" }}>
-          LINHA O/U
-        </Typography>
-        <TextField
-          value={linhaBet}
-          onChange={handleLinhaChange}
-          type="number"
-          inputProps={{ step: "0.5" }}
-          variant="outlined"
-          size="small"
+      {!disableLinhaInput && (
+        <Paper
+          elevation={0}
           sx={{
-            maxWidth: 120,
-            "& .MuiOutlinedInput-root": {
-              backgroundColor: "rgba(255, 255, 255, 0.05)",
-              color: "#fff",
-              "& fieldset": {
-                borderColor: "rgba(255, 255, 255, 0.2)",
-              },
-            },
+            p: 2,
+            mb: 3,
+            background: "#212939",
+            borderRadius: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
           }}
-        />
-      </Paper>
+        >
+          <Typography variant="h6" component="label" sx={{ color: "#fff" }}>
+            LINHA O/U
+          </Typography>
+          <TextField
+            value={linha}
+            onChange={handleLinhaChange}
+            type="number"
+            inputProps={{ step: "0.5" }}
+            variant="outlined"
+            size="small"
+            sx={{
+              maxWidth: 120,
+              "& .MuiOutlinedInput-root": {
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                color: "#fff",
+                "& fieldset": {
+                  borderColor: "rgba(255, 255, 255, 0.2)",
+                },
+              },
+            }}
+          />
+        </Paper>
+      )}
 
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
@@ -170,7 +172,7 @@ function AnaliseOverUnder({ games, teamId, defaultLinha, onLinhaChange }) {
                   alignItems="center"
                 >
                   <Typography variant="h6" sx={{ color: "#fff" }}>
-                    OVER {linhaBet}
+                    OVER {linha}
                   </Typography>
                   <StyledChip
                     variant="over"
@@ -214,6 +216,7 @@ function AnaliseOverUnder({ games, teamId, defaultLinha, onLinhaChange }) {
                           </Stack>
                           <Typography
                             variant="body2"
+                            component="div"
                             sx={{ fontWeight: 600, color: "#fff" }}
                           >
                             {jogo.total}
@@ -244,7 +247,7 @@ function AnaliseOverUnder({ games, teamId, defaultLinha, onLinhaChange }) {
                   alignItems="center"
                 >
                   <Typography variant="h6" sx={{ color: "#fff" }}>
-                    UNDER {linhaBet}
+                    UNDER {linha}
                   </Typography>
                   <StyledChip
                     variant="under"
@@ -317,11 +320,13 @@ AnaliseOverUnder.propTypes = {
   teamId: PropTypes.number,
   defaultLinha: PropTypes.number,
   onLinhaChange: PropTypes.func,
+  disableLinhaInput: PropTypes.bool,
 };
 
 AnaliseOverUnder.defaultProps = {
   games: [],
   defaultLinha: 0,
+  disableLinhaInput: false,
 };
 
 export default AnaliseOverUnder;

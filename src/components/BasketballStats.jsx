@@ -163,6 +163,54 @@ const NextOpponentIndicator = styled("div")({
   fontWeight: "500",
 });
 
+// Move calcularComparacao outside of the component to prevent recreation
+const calcularComparacao = (team1Games, team2Games, selectedTeams, linhasOverUnder) => {
+  if (!team1Games?.length || !team2Games?.length) return null;
+
+  const linhaTeam1 = linhasOverUnder[selectedTeams.team1?.id] || 0;
+  const linhaTeam2 = linhasOverUnder[selectedTeams.team2?.id] || 0;
+
+  const comparacoes = team1Games.map((game1, index) => {
+    const game2 = team2Games[index];
+    const pontosFavorito =
+      game1.teams.home.id === selectedTeams.team1.id
+        ? game1.scores.home.totalSemOT
+        : game1.scores.away.totalSemOT;
+
+    const pontosTomadosAdversario =
+      game2.teams.home.id === selectedTeams.team2.id
+        ? game2.scores.away.totalSemOT
+        : game2.scores.home.totalSemOT;
+
+    const totalCombinado = pontosFavorito + pontosTomadosAdversario;
+
+    const hasOvertime =
+      game1.scores.home.hasOvertime ||
+      game1.scores.away.hasOvertime ||
+      game2.scores.home.hasOvertime ||
+      game2.scores.away.hasOvertime;
+
+    const mediaLinhas = (linhaTeam1 + linhaTeam2) / 2; // Média das duas linhas
+    return {
+      data: formatarData(game1.date),
+      time1: {
+        nome: selectedTeams.team1.name,
+        pontos: pontosFavorito,
+      },
+      time2: {
+        nome: selectedTeams.team2.name,
+        pontosTomados: pontosTomadosAdversario,
+      },
+      totalCombinado,
+      hasOvertime,
+      // Calcular a diferença em relação à linha de O/U ao invés da média
+      diferencaDaLinha: totalCombinado - mediaLinhas // Usar a média das linhas
+    };
+  });
+
+  return comparacoes;
+};
+
 function BasketballStats() {
   const [loadingStates, setLoadingStates] = useState({
     leagues: true,
@@ -188,6 +236,7 @@ function BasketballStats() {
   const [proximoJogo, setProximoJogo] = useState(null);
   const [historicoTime1, setHistoricoTime1] = useState(null);
   const [linhasOverUnder, setLinhasOverUnder] = useState({});
+  const [linhaGlobal, setLinhaGlobal] = useState(200.5);
 
   const updateLoadingState = (key, value) => {
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
@@ -287,7 +336,7 @@ function BasketballStats() {
           <StatusWrapper>
             <StatusIndicator status="finished" />
             <span>FT</span>
-          </StatusWrapper>
+            </StatusWrapper>
         );
       case "NS":
       case "SCHED":
@@ -373,74 +422,125 @@ function BasketballStats() {
     );
     const mediaAtual = (totalGeral / comparacoes.length).toFixed(2);
 
+    // Ordenar as variações
+    const variacoes = comparacoes.map(comp => ({
+      ...comp,
+      diferencaDaLinha: parseFloat(comp.diferencaDaLinha.toFixed(1))
+    }));
+
+    // Separar em acima e abaixo
+    const variacoesAcima = variacoes
+      .filter(comp => comp.diferencaDaLinha > 0)
+      .sort((a, b) => b.diferencaDaLinha - a.diferencaDaLinha);
+    
+    const variacoesAbaixo = variacoes
+      .filter(comp => comp.diferencaDaLinha <= 0)
+      .sort((a, b) => a.diferencaDaLinha - b.diferencaDaLinha);
+
     return (
       <div className="comparison-section">
         <h3>Comparação de Jogos - Favorito + Tomados</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>
-                <div className="team-header-cell">
-                  <img
-                    src={team1Data.logo}
-                    alt={team1Data.name}
-                    className="team-mini-logo"
-                  />
-                  <span>{formatTeamName(team1Data.name)} (F)</span>
-                </div>
-              </th>
-              <th>
-                <div className="team-header-cell">
-                  <img
-                    src={team2Data.logo}
-                    alt={team2Data.name}
-                    className="team-mini-logo"
-                  />
-                  <span>Pts {formatTeamName(team2Data.name)}</span>
-                </div>
-              </th>
-              <th>Total</th>
-              <th>Var.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {comparacoes.map((comp, index) => (
-              <tr key={index}>
-                <td>{comp.data}</td>
-                <td className="pontos-feitos">
-                  {comp.time1.pontos}
-                  {comp.hasOvertime && <span className="overtime">*</span>}
-                </td>
-                <td className="pontos-tomados">
-                  {comp.time2.pontosTomados}
-                  {comp.hasOvertime && <span className="overtime">*</span>}
-                </td>
-                <td className="total-combined">
-                  {comp.totalCombinado}
-                  {comp.hasOvertime && <span className="overtime">*</span>}
-                </td>
-                <td
-                  className={`variacao ${
-                    comp.diferencaDaLinha > 0 ? "over" : "under"
-                  }`}
-                >
-                  {comp.diferencaDaLinha > 0 ? "+" : ""}
-                  {comp.diferencaDaLinha.toFixed(1)}
-                </td>
+        <div className="comparison-container" style={{ display: 'flex', gap: '20px' }}>
+          {/* Tabela Principal */}
+          <table style={{ flex: '2' }}>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Favorito</th>
+                <th>Pts Adversário</th>
+                <th>Total</th>
+                <th>Var.</th>
               </tr>
-            ))}
-            <tr className="totals-row">
-              <td colSpan="3">Média</td>
-              <td className="media">{mediaAtual}</td>
-              <td>-</td>
-            </tr>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {comparacoes.map((comp, index) => (
+                <tr key={index}>
+                  <td>{comp.data}</td>
+                  <td className="pontos-feitos">
+                    {comp.time1.pontos}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td className="pontos-tomados">
+                    {comp.time2.pontosTomados}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td className="total-combined">
+                    {comp.totalCombinado}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td
+                    className={`variacao ${
+                      comp.diferencaDaLinha > 0 ? "over" : "under"
+                    }`}
+                  >
+                    {comp.diferencaDaLinha > 0 ? "+" : ""}
+                    {comp.diferencaDaLinha.toFixed(1)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Resumo das Variações */}
+          <div className="results-summary" style={{
+            flex: '1',
+            backgroundColor: 'rgba(26, 32, 44, 0.8)',
+            padding: '20px',
+            borderRadius: '8px',
+            minWidth: '250px'
+          }}>
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ color: '#48bb78', marginBottom: '10px' }}>Acima da Linha ({variacoesAcima.length})</h4>
+              {variacoesAcima.map((comp, index) => (
+                <div key={index} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '4px 8px',
+                  backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                  marginBottom: '4px',
+                  borderRadius: '4px'
+                }}>
+                  <span>{comp.data}</span>
+                  <span style={{ color: '#48bb78', fontWeight: 'bold' }}>
+                    +{comp.diferencaDaLinha}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <h4 style={{ color: '#fc8181', marginBottom: '10px' }}>Abaixo da Linha ({variacoesAbaixo.length})</h4>
+              {variacoesAbaixo.map((comp, index) => (
+                <div key={index} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '4px 8px',
+                  backgroundColor: 'rgba(252, 129, 129, 0.1)',
+                  marginBottom: '4px',
+                  borderRadius: '4px'
+                }}>
+                  <span>{comp.data}</span>
+                  <span style={{ color: '#fc8181', fontWeight: 'bold' }}>
+                    {comp.diferencaDaLinha}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ 
+              marginTop: '20px', 
+              padding: '10px', 
+              backgroundColor: 'rgba(165, 180, 252, 0.1)',
+              borderRadius: '4px',
+              textAlign: 'center'
+            }}>
+              <p>Média: <span style={{ color: '#a5b4fc', fontWeight: 'bold' }}>{mediaAtual}</span></p>
+            </div>
+          </div>
+        </div>
         {comparacoes.some((comp) => comp.hasOvertime) && (
           <div className="overtime-note">
-            * Jogo com prorrogação (pontos da prorrogação não incluídos no
-            total)
+            * Jogo com prorrogação (pontos da prorrogação não incluídos no total)
           </div>
         )}
       </div>
@@ -587,6 +687,7 @@ function BasketballStats() {
     }
 
     const totais = calcularTotaisJogos(teamData.games);
+    const linha = linhasOverUnder[teamData.id] || 200.5;
 
     return (
       <div className="last-games">
@@ -603,49 +704,45 @@ function BasketballStats() {
               <th>Placar</th>
               <th>Time Visitante</th>
               <th>Total</th>
+              <th>Var.</th>
             </tr>
           </thead>
           <tbody>
-            {teamData.games.map((game) => (
-              <tr
-                key={game.id}
-                className={isWinner(game, teamData.id) ? "victory" : "defeat"}
-              >
-                <td>{formatarData(game.date)}</td>
-                <td>{getGameStatus(game.status)}</td>
-                <td
-                  className={
-                    game.teams.home.id === teamData.id ? "highlight" : ""
-                  }
+            {teamData.games.map((game) => {
+              const total = calcularTotalPartida(game);
+              const variacao = total - linha;
+              
+              return (
+                <tr
+                  key={game.id}
+                  className={isWinner(game, teamData.id) ? "victory" : "defeat"}
                 >
-                  {formatTeamName(game.teams.home.name)}
-                </td>
-                <td className="score">
-                  {game.scores.home.totalSemOT}
-                  {game.scores.home.hasOvertime && (
-                    <span className="overtime">*</span>
-                  )}{" "}
-                  - {game.scores.away.totalSemOT}
-                  {game.scores.away.hasOvertime && (
-                    <span className="overtime">*</span>
-                  )}
-                </td>
-                <td
-                  className={
-                    game.teams.away.id === teamData.id ? "highlight" : ""
-                  }
-                >
-                  {formatTeamName(game.teams.away.name)}
-                </td>
-                <td className="total-score">{calcularTotalPartida(game)}</td>
-              </tr>
-            ))}
+                  <td>{formatarData(game.date)}</td>
+                  <td>{getGameStatus(game.status)}</td>
+                  <td className={game.teams.home.id === teamData.id ? "highlight" : ""}>
+                    {formatTeamName(game.teams.home.name)}
+                  </td>
+                  <td className="score">
+                    {game.scores.home.totalSemOT}
+                    {game.scores.home.hasOvertime && <span className="overtime">*</span>}{" "}
+                    - {game.scores.away.totalSemOT}
+                    {game.scores.away.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td className={game.teams.away.id === teamData.id ? "highlight" : ""}>
+                    {formatTeamName(game.teams.away.name)}
+                  </td>
+                  <td className="total-score">{total}</td>
+                  <td className={`variacao ${variacao > 0 ? "over" : "under"}`}>
+                    {variacao > 0 ? "+" : ""}{variacao.toFixed(1)}
+                  </td>
+                </tr>
+              );
+            })}
             <tr className="totals-row">
-              <td colSpan="6">
-                {" "}
-                {/* Ajustado para cobrir todas as colunas */}
+              <td colSpan="7">
                 <div className="totals-content">
                   <span>Total de pontos nos jogos: {totais.total}</span>
+                  <span>Média: {(totais.total / teamData.games.length).toFixed(1)}</span>
                 </div>
               </td>
             </tr>
@@ -812,7 +909,7 @@ function BasketballStats() {
   // Add useEffect for mediaGeral calculation
   useEffect(() => {
     if (team1Data && team2Data) {
-      const comparacoes = calcularComparacao(team1Data.games, team2Data.games);
+      const comparacoes = calcularComparacao(team1Data.games, team2Data.games, selectedTeams, linhasOverUnder);
       if (comparacoes && comparacoes.length > 0) {
         const totalGeral = comparacoes.reduce(
           (acc, comp) => acc + comp.totalCombinado,
@@ -822,7 +919,7 @@ function BasketballStats() {
         setMediaGeral(parseFloat(calculatedMedia));
       }
     }
-  }, [team1Data, team2Data, calcularComparacao]);
+  }, [team1Data, team2Data, selectedTeams, linhasOverUnder]);
 
   const LoadingIndicator = ({ loading, children }) => (
     <Box className="select-wrapper">
@@ -896,12 +993,282 @@ function BasketballStats() {
   };
 
   // Atualizar o valor da linha quando mudar no AnaliseOverUnder
-  const handleLinhaChange = (novaLinha, teamId) => {
+  const handleLinhaChange = (novaLinha) => {
+    setLinhaGlobal(novaLinha);
+    // Atualiza todas as linhas com o mesmo valor
     setLinhasOverUnder(prev => ({
       ...prev,
-      [teamId]: novaLinha
+      [selectedTeams.team1?.id]: novaLinha,
+      [selectedTeams.team2?.id]: novaLinha
     }));
   };
+
+  // Função auxiliar para calcular a média geral
+  const calcularMediaGeral = (comparacoes) => {
+    if (!comparacoes || comparacoes.length === 0) return 0;
+    const total = comparacoes.reduce((acc, comp) => acc + comp.totalCombinado, 0);
+    return parseFloat((total / comparacoes.length).toFixed(2));
+  };
+
+  // Atualize o useEffect que monitora mudanças nas linhas
+  useEffect(() => {
+    if (team1Data && team2Data) {
+      const comparacoes = calcularComparacao(team1Data.games, team2Data.games, selectedTeams, linhasOverUnder);
+      setMediaGeral(calcularMediaGeral(comparacoes));
+    }
+  }, [team1Data, team2Data, selectedTeams, linhasOverUnder, calcularComparacao]);
+
+  // Adicione esta função para unificar todas as variações
+  const getTotalVariations = () => {
+    if (!team1Data?.games || !team2Data?.games) return null;
+
+    // Variações do Time 1
+    const variationsTime1 = team1Data.games.map(game => {
+      const total = calcularTotalPartida(game);
+      const linha = linhasOverUnder[team1Data.id] || 200.5;
+      return {
+        data: formatarData(game.date),
+        total,
+        variacao: total - linha,
+        time: team1Data.name,
+        tipo: 'Time 1',
+        detalhes: `${game.scores.home.totalSemOT} - ${game.scores.away.totalSemOT}`
+      };
+    });
+
+    // Variações do Time 2
+    const variationsTime2 = team2Data.games.map(game => {
+      const total = calcularTotalPartida(game);
+      const linha = linhasOverUnder[team2Data.id] || 200.5;
+      return {
+        data: formatarData(game.date),
+        total,
+        variacao: total - linha,
+        time: team2Data.name,
+        tipo: 'Time 2',
+        detalhes: `${game.scores.home.totalSemOT} - ${game.scores.away.totalSemOT}`
+      };
+    });
+
+    // Variações dos jogos combinados
+    const comparacoes = calcularComparacao(team1Data.games, team2Data.games, selectedTeams, linhasOverUnder);
+    const variationsComparacoes = comparacoes.map(comp => ({
+      data: comp.data,
+      total: comp.totalCombinado,
+      variacao: comp.diferencaDaLinha,
+      time: `${team1Data.name} + ${team2Data.name}`,
+      tipo: 'Combinado',
+      detalhes: `${comp.time1.pontos} + ${comp.time2.pontosTomados}`
+    }));
+
+    // Combina todas as variações
+    const allVariations = [
+      ...variationsTime1,
+      ...variationsTime2,
+      ...variationsComparacoes
+    ].sort((a, b) => b.variacao - a.variacao);
+
+    const mediaGeral = allVariations.reduce((acc, curr) => acc + curr.variacao, 0) / allVariations.length;
+
+    return {
+      all: allVariations,
+      over: allVariations.filter(v => v.variacao > 0),
+      under: allVariations.filter(v => v.variacao <= 0),
+      mediaGeral,
+      totalJogos: allVariations.length,
+      mediaPorTipo: {
+        time1: variationsTime1.reduce((acc, curr) => acc + curr.variacao, 0) / variationsTime1.length,
+        time2: variationsTime2.reduce((acc, curr) => acc + curr.variacao, 0) / variationsTime2.length,
+        combinado: variationsComparacoes.reduce((acc, curr) => acc + curr.variacao, 0) / variationsComparacoes.length
+      }
+    };
+  };
+
+  // Modifique o renderResumoGeral para mostrar todos os jogos
+  const renderResumoGeral = () => {
+    const variations = getTotalVariations();
+    if (!variations) return null;
+
+    return (
+      <div className="results-summary" style={{
+        flex: '1',
+        backgroundColor: 'rgba(26, 32, 44, 0.8)',
+        padding: '20px',
+        borderRadius: '8px',
+        minWidth: '300px',
+        maxHeight: '800px',
+        overflowY: 'auto'
+      }}>
+        <h4 style={{ color: '#a5b4fc', marginBottom: '20px', textAlign: 'center' }}>
+          Resumo Geral das Variações
+        </h4>
+
+        {/* Estatísticas gerais */}
+        <div style={{
+          padding: '10px',
+          backgroundColor: 'rgba(165, 180, 252, 0.1)',
+          borderRadius: '4px',
+          marginBottom: '20px',
+          textAlign: 'center'
+        }}>
+          <p>Total de jogos: <span style={{ color: '#a5b4fc', fontWeight: 'bold' }}>{variations.totalJogos}</span></p>
+          <p>Over: <span style={{ color: '#48bb78', fontWeight: 'bold' }}>{variations.over.length}</span></p>
+          <p>Under: <span style={{ color: '#fc8181', fontWeight: 'bold' }}>{variations.under.length}</span></p>
+          <p>Média Geral: <span style={{ color: '#a5b4fc', fontWeight: 'bold' }}>{variations.mediaGeral.toFixed(1)}</span></p>
+        </div>
+
+        {/* Lista completa de jogos */}
+        <div style={{ marginBottom: '20px' }}>
+          <h5 style={{ color: '#a5b4fc', marginBottom: '10px' }}>Todos os Jogos (ordenados por variação)</h5>
+          {variations.all.map((variation, index) => (
+            <div key={index} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '8px',
+              backgroundColor: variation.variacao > 0 
+                ? 'rgba(72, 187, 120, 0.1)' 
+                : 'rgba(252, 129, 129, 0.1)',
+              marginBottom: '4px',
+              borderRadius: '4px'
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.9rem' }}>{variation.data}</span>
+                <span style={{ fontSize: '0.8rem', color: '#a0aec0' }}>
+                  {variation.tipo} ({variation.detalhes})
+                </span>
+              </div>
+              <span style={{ 
+                color: variation.variacao > 0 ? '#48bb78' : '#fc8181', 
+                fontWeight: 'bold'
+              }}>
+                {variation.variacao > 0 ? '+' : ''}{variation.variacao.toFixed(1)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Função auxiliar para renderizar o resumo geral no componente principal
+  const renderResultadosComparacao = () => {
+    if (!team1Data || !team2Data) return null;
+
+    const comparacoes = calcularComparacao(team1Data.games, team2Data.games, selectedTeams, linhasOverUnder);
+
+    if (!comparacoes || comparacoes.length === 0) {
+      return (
+        <div className="comparison-section">
+          <h3>Comparação de Jogos - Favorito + Tomados</h3>
+          <p>Não há dados suficientes para comparação</p>
+        </div>
+      );
+    }
+
+    const totalGeral = comparacoes.reduce(
+      (acc, comp) => acc + comp.totalCombinado,
+      0
+    );
+    const mediaAtual = (totalGeral / comparacoes.length).toFixed(2);
+    const mediaVariacoes = comparacoes.reduce((acc, comp) => acc + comp.diferencaDaLinha, 0) / comparacoes.length;
+
+    return (
+      <div className="comparison-section">
+        <h3>Comparação de Jogos - Favorito + Tomados</h3>
+        <div className="comparison-container" style={{ display: 'flex', gap: '20px' }}>
+          <table style={{ flex: '2' }}>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Favorito</th>
+                <th>Pts Adversário</th>
+                <th>Total</th>
+                <th>Var.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparacoes.map((comp, index) => (
+                <tr key={index}>
+                  <td>{comp.data}</td>
+                  <td className="pontos-feitos">
+                    {comp.time1.pontos}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td className="pontos-tomados">
+                    {comp.time2.pontosTomados}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td className="total-combined">
+                    {comp.totalCombinado}
+                    {comp.hasOvertime && <span className="overtime">*</span>}
+                  </td>
+                  <td
+                    className={`variacao ${
+                      comp.diferencaDaLinha > 0 ? "over" : "under"
+                    }`}
+                  >
+                    {comp.diferencaDaLinha > 0 ? "+" : ""}
+                    {comp.diferencaDaLinha.toFixed(1)}
+                  </td>
+                </tr>
+              ))}
+              {/* Nova linha com as médias */}
+              <tr className="media-row" style={{
+                backgroundColor: 'rgba(44, 55, 82, 0.9)',
+                fontWeight: 'bold'
+              }}>
+                <td colSpan="3" style={{ textAlign: 'right' }}>Média:</td>
+                <td className="total-combined">{mediaAtual}</td>
+                <td className={`variacao ${mediaVariacoes > 0 ? "over" : "under"}`}>
+                  {mediaVariacoes > 0 ? "+" : ""}
+                  {mediaVariacoes.toFixed(1)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          {renderResumoGeral()}
+        </div>
+        {comparacoes.some((comp) => comp.hasOvertime) && (
+          <div className="overtime-note">
+            * Jogo com prorrogação (pontos da prorrogação não incluídos no total)
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Adicione este componente para o input global
+  const LinhaGlobalInput = () => (
+    <div className="linha-global-container" style={{
+      background: 'rgba(26, 32, 44, 0.8)',
+      padding: '1rem',
+      borderRadius: '8px',
+      marginBottom: '1rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '1rem'
+    }}>
+      <label style={{ color: '#a5b4fc', fontWeight: 'bold' }}>
+        Linha O/U Global:
+      </label>
+      <input
+        type="number"
+        step="0.5"
+        value={linhaGlobal}
+        onChange={(e) => handleLinhaChange(parseFloat(e.target.value))}
+        style={{
+          background: 'rgba(44, 55, 82, 0.9)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '4px',
+          padding: '0.5rem',
+          color: '#fff',
+          width: '100px',
+          textAlign: 'center'
+        }}
+      />
+    </div>
+  );
 
   // Return statement (main render)
   if (error) {
@@ -1092,22 +1459,27 @@ function BasketballStats() {
 
           {/* Comparison Row - Full width */}
           <div className="comparison-row">
-            {!loading && renderComparacao()}
+            {!loading && renderResultadosComparacao()}
           </div>
+
+          {/* Adicione o input global antes da linha de análise */}
+          <LinhaGlobalInput />
 
           {/* Analysis Row - Over/Under analysis side by side */}
           <div className="analysis-row">
             <AnaliseOverUnder
               games={team1Data.games}
               teamId={team1Data.id}
-              defaultLinha={linhasOverUnder[team1Data.id] || 200.5}
-              onLinhaChange={(novaLinha) => handleLinhaChange(novaLinha, team1Data.id)}
+              defaultLinha={linhaGlobal}
+              onLinhaChange={(novaLinha) => handleLinhaChange(novaLinha)}
+              disableLinhaInput={true}
             />
             <AnaliseOverUnder
               games={team2Data.games}
               teamId={team2Data.id}
-              defaultLinha={linhasOverUnder[team2Data.id] || 200.5}
-              onLinhaChange={(novaLinha) => handleLinhaChange(novaLinha, team2Data.id)}
+              defaultLinha={linhaGlobal}
+              onLinhaChange={(novaLinha) => handleLinhaChange(novaLinha)}
+              disableLinhaInput={true}
             />
           </div>
         </div>
