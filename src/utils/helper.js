@@ -65,19 +65,20 @@ export const formatSeasonForApi = (seasonStr, leagueId) => {
   return year;
 };
 
-export const calcularTotaisJogos = (games) => {
-  if (!games || games.length === 0)
+export const calcularTotaisJogos = (games, teamId) => {
+  if (!games || games.length === 0) {
     return { pontosFeitos: 0, pontosSofridos: 0, total: 0 };
+  }
 
   return games.reduce(
     (acc, game) => {
-      const isHome = game.teams.home.id === game.id;
+      const isHome = game.teams.home.id === teamId;
       const pontosFeitos = isHome
-        ? game.scores.home.total
-        : game.scores.away.total;
+        ? game.scores.home.totalSemOT
+        : game.scores.away.totalSemOT;
       const pontosSofridos = isHome
-        ? game.scores.away.total
-        : game.scores.home.total;
+        ? game.scores.away.totalSemOT
+        : game.scores.home.totalSemOT;
 
       return {
         pontosFeitos: acc.pontosFeitos + pontosFeitos,

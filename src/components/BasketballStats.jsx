@@ -686,7 +686,7 @@ function BasketballStats() {
       );
     }
 
-    const totais = calcularTotaisJogos(teamData.games);
+    const totais = calcularTotaisJogos(teamData.games, teamData.id);
     const linha = linhasOverUnder[teamData.id] || 200.5;
 
     return (
