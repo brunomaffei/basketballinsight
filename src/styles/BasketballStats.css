@@ -1670,12 +1670,137 @@ select:not(:disabled):focus {
   align-self: flex-start;
 }
 
+.summary-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.results-summary-card {
+  background-color: rgba(26, 32, 44, 0.8);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid rgba(165, 180, 252, 0.12);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+}
+
+.summary-card-title {
+  color: #a5b4fc;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.summary-card-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #cbd5f5;
+  font-size: 0.9rem;
+}
+
+.summary-card-value {
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.summary-card-value.over-value {
+  color: #48bb78;
+}
+
+.summary-card-value.under-value {
+  color: #fc8181;
+}
+
+.summary-card-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(165, 180, 252, 0.3), rgba(165, 180, 252, 0));
+  border-radius: 999px;
+}
+
+.summary-card-delta {
+  font-weight: 700;
+}
+
+.summary-card-delta.positive {
+  color: #48bb78;
+}
+
+.summary-card-delta.negative {
+  color: #fc8181;
+}
+
+.summary-card-subtitle {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #a5b4fc;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.halftime-summary-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.halftime-team-panel {
+  background-color: rgba(15, 23, 42, 0.55);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.6);
+}
+
+.halftime-team-name {
+  font-weight: 600;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.halftime-team-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #cbd5f5;
+}
+
+.halftime-team-stat span:first-child {
+  color: rgba(226, 232, 240, 0.75);
+  font-weight: 500;
+}
+
+.halftime-team-split {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.halftime-team-split .over-value,
+.halftime-team-split .under-value {
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .comparison-container {
     flex-direction: column;
   }
-  
+
   .results-summary {
+    width: 100%;
+  }
+
+  .summary-column {
     width: 100%;
   }
 }
