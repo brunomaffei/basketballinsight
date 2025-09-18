@@ -713,7 +713,7 @@ function BasketballStats() {
       const homeHalftime = getHalftimeScoreValue(game.scores.home);
       const awayHalftime = getHalftimeScoreValue(game.scores.away);
       const isHome = game.teams.home.id === teamData.id;
-      const uniqueId = game.id ?? `${game.date}-${index}`;
+      const uniqueId = game.id ?? `${game.date}-${game.teams.home.id}-${game.teams.away.id}`;
 
       return {
         id: uniqueId,
