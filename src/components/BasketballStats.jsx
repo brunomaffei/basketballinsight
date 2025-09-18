@@ -675,6 +675,60 @@ function BasketballStats() {
     );
   };
 
+  const getHalftimeScoreValue = (scores) => {
+    if (!scores) return 0;
+
+    if (typeof scores.halftime === "number") {
+      return scores.halftime;
+    }
+
+    const q1 = scores.quarter_1 ?? 0;
+    const q2 = scores.quarter_2 ?? 0;
+    const hasFirstHalfData = q1 !== 0 || q2 !== 0;
+
+    if (hasFirstHalfData) {
+      return q1 + q2;
+    }
+
+    if (typeof scores.totalSemOT === "number") {
+      const q3 = scores.quarter_3 ?? 0;
+      const q4 = scores.quarter_4 ?? 0;
+      return scores.totalSemOT - q3 - q4;
+    }
+
+    if (typeof scores.total === "number") {
+      const q3 = scores.quarter_3 ?? 0;
+      const q4 = scores.quarter_4 ?? 0;
+      const overtime = scores.overtime ?? 0;
+      return scores.total - q3 - q4 - overtime;
+    }
+
+    return 0;
+  };
+
+  const buildHalftimeGames = (teamData) => {
+    if (!teamData?.games?.length) return [];
+
+    return teamData.games.map((game, index) => {
+      const homeHalftime = getHalftimeScoreValue(game.scores.home);
+      const awayHalftime = getHalftimeScoreValue(game.scores.away);
+      const isHome = game.teams.home.id === teamData.id;
+      const uniqueId = game.id ?? `${game.date}-${index}`;
+
+      return {
+        id: uniqueId,
+        date: game.date,
+        homeName: formatTeamName(game.teams.home.name),
+        awayName: formatTeamName(game.teams.away.name),
+        homeHalftime,
+        awayHalftime,
+        teamHalftime: isHome ? homeHalftime : awayHalftime,
+        opponentHalftime: isHome ? awayHalftime : homeHalftime,
+        totalHalftime: homeHalftime + awayHalftime,
+      };
+    });
+  };
+
   // Modifique o render da tabela de últimos jogos
   const renderUltimosJogos = (teamData) => {
     if (loading) return <LastGamesSkeleton />;
@@ -686,8 +740,38 @@ function BasketballStats() {
       );
     }
 
-    const totais = calcularTotaisJogos(teamData.games);
+    const totais = calcularTotaisJogos(teamData.games, teamData.id);
     const linha = linhasOverUnder[teamData.id] || 200.5;
+    const jogosCount = teamData.games.length;
+
+    const mediaPontosFeitos = jogosCount
+      ? (totais.pontosFeitos / jogosCount).toFixed(1)
+      : "0.0";
+    const mediaPontosSofridos = jogosCount
+      ? (totais.pontosSofridos / jogosCount).toFixed(1)
+      : "0.0";
+    const mediaTotal = jogosCount ? (totais.total / jogosCount).toFixed(1) : "0.0";
+
+    const jogosIntervalo = buildHalftimeGames(teamData);
+
+    const totaisIntervalo = jogosIntervalo.reduce(
+      (acc, jogo) => ({
+        pontosFeitos: acc.pontosFeitos + jogo.teamHalftime,
+        pontosSofridos: acc.pontosSofridos + jogo.opponentHalftime,
+        total: acc.total + jogo.totalHalftime,
+      }),
+      { pontosFeitos: 0, pontosSofridos: 0, total: 0 }
+    );
+
+    const mediaIntervaloFeitos = jogosCount
+      ? (totaisIntervalo.pontosFeitos / jogosCount).toFixed(1)
+      : "0.0";
+    const mediaIntervaloSofridos = jogosCount
+      ? (totaisIntervalo.pontosSofridos / jogosCount).toFixed(1)
+      : "0.0";
+    const mediaIntervaloTotal = jogosCount
+      ? (totaisIntervalo.total / jogosCount).toFixed(1)
+      : "0.0";
 
     return (
       <div className="last-games">
@@ -741,13 +825,61 @@ function BasketballStats() {
             <tr className="totals-row">
               <td colSpan="7">
                 <div className="totals-content">
-                  <span>Total de pontos nos jogos: {totais.total}</span>
-                  <span>Média: {(totais.total / teamData.games.length).toFixed(1)}</span>
+                  <span>Total de pontos combinados: {totais.total}</span>
+                  <span>Média total: {mediaTotal}</span>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
+        <div className="team-averages-banner">
+          <div className="average-card">
+            <span className="average-title">Média {teamData.name}</span>
+            <div className="average-values">
+              <span className="average-label">Pontos feitos</span>
+              <span className="average-number">{mediaPontosFeitos}</span>
+            </div>
+            <div className="average-values">
+              <span className="average-label">Pontos tomados</span>
+              <span className="average-number">{mediaPontosSofridos}</span>
+            </div>
+          </div>
+          <div className="average-card halftime">
+            <span className="average-title">Média no intervalo</span>
+            <div className="average-values">
+              <span className="average-label">Pontos feitos</span>
+              <span className="average-number">{mediaIntervaloFeitos}</span>
+            </div>
+            <div className="average-values">
+              <span className="average-label">Pontos tomados</span>
+              <span className="average-number">{mediaIntervaloSofridos}</span>
+            </div>
+          </div>
+        </div>
+        <div className="halftime-section">
+          <h4>Pontuação no intervalo (últimos 5 jogos)</h4>
+          <div className="halftime-list">
+            {jogosIntervalo.map((jogo) => (
+              <div key={jogo.id} className="halftime-item">
+                <div className="halftime-date">{formatarData(jogo.date)}</div>
+                <div className="halftime-score">
+                  <span className="team-name">{jogo.homeName}</span>
+                  <span className="halftime-points">
+                    {jogo.homeHalftime} - {jogo.awayHalftime}
+                  </span>
+                  <span className="team-name">{jogo.awayName}</span>
+                </div>
+                <div className="halftime-total">Total: {jogo.totalHalftime}</div>
+              </div>
+            ))}
+          </div>
+          <div className="halftime-summary-banner">
+            <span>
+              Média total no intervalo: {mediaIntervaloTotal} | Pontos feitos: {mediaIntervaloFeitos} |
+              Pontos tomados: {mediaIntervaloSofridos}
+            </span>
+          </div>
+        </div>
       </div>
     );
   };
@@ -1066,14 +1198,20 @@ function BasketballStats() {
       ...variationsComparacoes
     ].sort((a, b) => b.variacao - a.variacao);
 
-    const mediaGeral = allVariations.reduce((acc, curr) => acc + curr.variacao, 0) / allVariations.length;
+    const mediaVariacao = allVariations.reduce((acc, curr) => acc + curr.variacao, 0) / allVariations.length;
+    const mediaTotalPontos = allVariations.reduce((acc, curr) => acc + (curr.total || 0), 0) / allVariations.length;
+
+    const over = allVariations.filter(v => v.variacao > 0);
+    const under = allVariations.filter(v => v.variacao <= 0);
+    const totalJogos = allVariations.length;
 
     return {
       all: allVariations,
-      over: allVariations.filter(v => v.variacao > 0),
-      under: allVariations.filter(v => v.variacao <= 0),
-      mediaGeral,
-      totalJogos: allVariations.length,
+      over,
+      under,
+      mediaVariacao,
+      mediaTotalPontos,
+      totalJogos,
       mediaPorTipo: {
         time1: variationsTime1.reduce((acc, curr) => acc + curr.variacao, 0) / variationsTime1.length,
         time2: variationsTime2.reduce((acc, curr) => acc + curr.variacao, 0) / variationsTime2.length,
@@ -1082,65 +1220,202 @@ function BasketballStats() {
     };
   };
 
-  // Modifique o renderResumoGeral para mostrar todos os jogos
+  // Card compacto com resumo geral das variações
   const renderResumoGeral = () => {
     const variations = getTotalVariations();
     if (!variations) return null;
 
+    const mediaTotal = Number.isFinite(variations.mediaTotalPontos)
+      ? variations.mediaTotalPontos.toFixed(1)
+      : "0.0";
+    const mediaVariacao = Number.isFinite(variations.mediaVariacao)
+      ? variations.mediaVariacao
+      : 0;
+    const deltaClass = mediaVariacao >= 0 ? "positive" : "negative";
+
     return (
-      <div className="results-summary" style={{
-        flex: '1',
-        backgroundColor: 'rgba(26, 32, 44, 0.8)',
-        padding: '20px',
-        borderRadius: '8px',
-        minWidth: '300px',
-        maxHeight: '800px',
-        overflowY: 'auto'
-      }}>
-        <h4 style={{ color: '#a5b4fc', marginBottom: '20px', textAlign: 'center' }}>
-          Resumo Geral das Variações
-        </h4>
-
-        {/* Estatísticas gerais */}
-        <div style={{
-          padding: '10px',
-          backgroundColor: 'rgba(165, 180, 252, 0.1)',
-          borderRadius: '4px',
-          marginBottom: '20px',
-          textAlign: 'center'
-        }}>
-          <p>Total de jogos: <span style={{ color: '#a5b4fc', fontWeight: 'bold' }}>{variations.totalJogos}</span></p>
-          <p>Over: <span style={{ color: '#48bb78', fontWeight: 'bold' }}>{variations.over.length}</span></p>
-          <p>Under: <span style={{ color: '#fc8181', fontWeight: 'bold' }}>{variations.under.length}</span></p>
-          <p>Média Geral: <span style={{ color: '#a5b4fc', fontWeight: 'bold' }}>{variations.mediaGeral.toFixed(1)}</span></p>
+      <div className="results-summary-card general-summary-card">
+        <h4 className="summary-card-title">Resumo Geral das Variações</h4>
+        <div className="summary-card-stat">
+          <span>Total de jogos</span>
+          <span className="summary-card-value">{variations.totalJogos}</span>
         </div>
+        <div className="summary-card-stat">
+          <span>Over</span>
+          <span className="summary-card-value over-value">{variations.over.length}</span>
+        </div>
+        <div className="summary-card-stat">
+          <span>Under</span>
+          <span className="summary-card-value under-value">{variations.under.length}</span>
+        </div>
+        <div className="summary-card-divider" />
+        <div className="summary-card-stat">
+          <span>Média Geral</span>
+          <span className="summary-card-value">{mediaTotal}</span>
+        </div>
+        <div className="summary-card-stat">
+          <span>Média da variação</span>
+          <span className={`summary-card-value summary-card-delta ${deltaClass}`}>
+            {mediaVariacao >= 0 ? "+" : ""}{mediaVariacao.toFixed(1)}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
-        {/* Lista completa de jogos */}
-        <div style={{ marginBottom: '20px' }}>
-          <h5 style={{ color: '#a5b4fc', marginBottom: '10px' }}>Todos os Jogos (ordenados por variação)</h5>
-          {variations.all.map((variation, index) => (
-            <div key={index} style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '8px',
-              backgroundColor: variation.variacao > 0 
-                ? 'rgba(72, 187, 120, 0.1)' 
-                : 'rgba(252, 129, 129, 0.1)',
-              marginBottom: '4px',
-              borderRadius: '4px'
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.9rem' }}>{variation.data}</span>
-                <span style={{ fontSize: '0.8rem', color: '#a0aec0' }}>
-                  {variation.tipo} ({variation.detalhes})
+  const getHalftimeVariationsSummary = () => {
+    if (!team1Data?.games || !team2Data?.games) return null;
+
+    const team1Games = buildHalftimeGames(team1Data);
+    const team2Games = buildHalftimeGames(team2Data);
+
+    const linhaTeam1 = (linhasOverUnder[team1Data.id] ?? linhaGlobal) / 2;
+    const linhaTeam2 = (linhasOverUnder[team2Data.id] ?? linhaGlobal) / 2;
+
+    const computeTeamSummary = (games, linha) => {
+      if (!games.length) return null;
+
+      const totals = games.reduce(
+        (acc, jogo) => {
+          const total = jogo.totalHalftime;
+          return {
+            feitos: acc.feitos + jogo.teamHalftime,
+            tomados: acc.tomados + jogo.opponentHalftime,
+            geral: acc.geral + total,
+            variacaoSoma: acc.variacaoSoma + (total - linha),
+            over: acc.over + (Number.isFinite(linha) && linha > 0 && total > linha ? 1 : 0),
+          };
+        },
+        { feitos: 0, tomados: 0, geral: 0, variacaoSoma: 0, over: 0 }
+      );
+
+      const jogos = games.length;
+      const linhaValida = Number.isFinite(linha) && linha > 0;
+      const over = linhaValida ? totals.over : null;
+      const under = linhaValida ? jogos - totals.over : null;
+      const mediaVariacao = linhaValida ? totals.variacaoSoma / jogos : null;
+
+      return {
+        jogos,
+        mediaFeitos: jogos ? totals.feitos / jogos : 0,
+        mediaTomados: jogos ? totals.tomados / jogos : 0,
+        mediaTotal: jogos ? totals.geral / jogos : 0,
+        totalGeral: totals.geral,
+        over,
+        under,
+        mediaVariacao,
+      };
+    };
+
+    const resumoTime1 = computeTeamSummary(team1Games, linhaTeam1);
+    const resumoTime2 = computeTeamSummary(team2Games, linhaTeam2);
+
+    const summaries = [
+      resumoTime1 ? { ...resumoTime1, name: team1Data.name } : null,
+      resumoTime2 ? { ...resumoTime2, name: team2Data.name } : null,
+    ].filter(Boolean);
+
+    if (!summaries.length) return null;
+
+    const totalJogos = summaries.reduce((acc, item) => acc + item.jogos, 0);
+    const totalGeralPontos = summaries.reduce((acc, item) => acc + item.totalGeral, 0);
+    const mediaGeral = totalJogos ? totalGeralPontos / totalJogos : 0;
+
+    const oversDisponiveis = summaries.every((item) => item.over !== null);
+    const totalOvers = oversDisponiveis
+      ? summaries.reduce((acc, item) => acc + item.over, 0)
+      : null;
+    const totalUnders = oversDisponiveis
+      ? summaries.reduce((acc, item) => acc + item.under, 0)
+      : null;
+
+    const mediaVariacao = oversDisponiveis
+      ? summaries.reduce((acc, item) => acc + item.mediaVariacao * item.jogos, 0) / totalJogos
+      : null;
+
+    return {
+      totalJogos,
+      totalOvers,
+      totalUnders,
+      mediaGeral,
+      mediaVariacao,
+      teams: summaries,
+    };
+  };
+
+  const renderResumoIntervalo = () => {
+    const resumoIntervalo = getHalftimeVariationsSummary();
+    if (!resumoIntervalo) return null;
+
+    const mediaGeral = Number.isFinite(resumoIntervalo.mediaGeral)
+      ? resumoIntervalo.mediaGeral.toFixed(1)
+      : "0.0";
+    const mediaVariacao = resumoIntervalo.mediaVariacao;
+    const deltaClass = Number.isFinite(mediaVariacao) && mediaVariacao !== null
+      ? mediaVariacao >= 0
+        ? "positive"
+        : "negative"
+      : "";
+
+    return (
+      <div className="results-summary-card halftime-summary-card">
+        <h4 className="summary-card-title">Resumo Geral das Variações (Intervalo)</h4>
+        <div className="summary-card-stat">
+          <span>Total de jogos</span>
+          <span className="summary-card-value">{resumoIntervalo.totalJogos}</span>
+        </div>
+        {resumoIntervalo.totalOvers !== null && (
+          <div className="summary-card-stat">
+            <span>Over intervalo</span>
+            <span className="summary-card-value over-value">{resumoIntervalo.totalOvers}</span>
+          </div>
+        )}
+        {resumoIntervalo.totalUnders !== null && (
+          <div className="summary-card-stat">
+            <span>Under intervalo</span>
+            <span className="summary-card-value under-value">{resumoIntervalo.totalUnders}</span>
+          </div>
+        )}
+        <div className="summary-card-divider" />
+        <div className="summary-card-stat">
+          <span>Média geral intervalo</span>
+          <span className="summary-card-value">{mediaGeral}</span>
+        </div>
+        {Number.isFinite(mediaVariacao) && mediaVariacao !== null && (
+          <div className="summary-card-stat">
+            <span>Média da variação intervalo</span>
+            <span className={`summary-card-value summary-card-delta ${deltaClass}`}>
+              {mediaVariacao >= 0 ? "+" : ""}{mediaVariacao.toFixed(1)}
+            </span>
+          </div>
+        )}
+        <div className="summary-card-subtitle">Médias por time (intervalo)</div>
+        <div className="halftime-summary-teams">
+          {resumoIntervalo.teams.map((team) => (
+            <div key={team.name} className="halftime-team-panel">
+              <span className="halftime-team-name">{team.name}</span>
+              <div className="halftime-team-stat">
+                <span>Jogos analisados</span>
+                <span className="summary-card-value">{team.jogos}</span>
+              </div>
+              <div className="halftime-team-stat">
+                <span>Pontos feitos (média)</span>
+                <span className="summary-card-value">
+                  {Number.isFinite(team.mediaFeitos) ? team.mediaFeitos.toFixed(1) : "0.0"}
                 </span>
               </div>
-              <span style={{ 
-                color: variation.variacao > 0 ? '#48bb78' : '#fc8181', 
-                fontWeight: 'bold'
-              }}>
-                {variation.variacao > 0 ? '+' : ''}{variation.variacao.toFixed(1)}
-              </span>
+              <div className="halftime-team-stat">
+                <span>Pontos tomados (média)</span>
+                <span className="summary-card-value">
+                  {Number.isFinite(team.mediaTomados) ? team.mediaTomados.toFixed(1) : "0.0"}
+                </span>
+              </div>
+              {team.over !== null && team.under !== null && (
+                <div className="halftime-team-split">
+                  <span className="over-value">Over: {team.over}</span>
+                  <span className="under-value">Under: {team.under}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1224,7 +1499,10 @@ function BasketballStats() {
               </tr>
             </tbody>
           </table>
-          {renderResumoGeral()}
+          <div className="summary-column">
+            {renderResumoGeral()}
+            {renderResumoIntervalo()}
+          </div>
         </div>
         {comparacoes.some((comp) => comp.hasOvertime) && (
           <div className="overtime-note">
@@ -1480,13 +1758,13 @@ function BasketballStats() {
             </div>
           </div>
 
+          {/* Adicione o input global logo abaixo dos times */}
+          <LinhaGlobalInput />
+
           {/* Comparison Row - Full width */}
           <div className="comparison-row">
             {!loading && renderResultadosComparacao()}
           </div>
-
-          {/* Adicione o input global antes da linha de análise */}
-          <LinhaGlobalInput />
 
           {/* Analysis Row - Over/Under analysis side by side */}
           <div className="analysis-row">
