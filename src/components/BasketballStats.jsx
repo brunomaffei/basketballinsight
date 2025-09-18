@@ -752,7 +752,53 @@ function BasketballStats() {
       : "0.0";
     const mediaTotal = jogosCount ? (totais.total / jogosCount).toFixed(1) : "0.0";
 
-    const jogosIntervalo = buildHalftimeGames(teamData);
+    const getHalftimeScore = (scores) => {
+      if (!scores) return 0;
+      if (typeof scores.halftime === "number") {
+        return scores.halftime;
+      }
+
+      const q1 = scores.quarter_1 ?? 0;
+      const q2 = scores.quarter_2 ?? 0;
+      const hasFirstHalfData = q1 !== 0 || q2 !== 0;
+      if (hasFirstHalfData) {
+        return q1 + q2;
+      }
+
+      if (typeof scores.totalSemOT === "number") {
+        const q3 = scores.quarter_3 ?? 0;
+        const q4 = scores.quarter_4 ?? 0;
+        return scores.totalSemOT - q3 - q4;
+      }
+
+      if (typeof scores.total === "number") {
+        const q3 = scores.quarter_3 ?? 0;
+        const q4 = scores.quarter_4 ?? 0;
+        const overtime = scores.overtime ?? 0;
+        return scores.total - q3 - q4 - overtime;
+      }
+
+      return 0;
+    };
+
+    const jogosIntervalo = teamData.games.map((game, index) => {
+      const homeHalftime = getHalftimeScore(game.scores.home);
+      const awayHalftime = getHalftimeScore(game.scores.away);
+      const isHome = game.teams.home.id === teamData.id;
+      const uniqueId = game.id ?? `${game.date}-${index}`;
+
+      return {
+        id: uniqueId,
+        date: game.date,
+        homeName: formatTeamName(game.teams.home.name),
+        awayName: formatTeamName(game.teams.away.name),
+        homeHalftime,
+        awayHalftime,
+        teamHalftime: isHome ? homeHalftime : awayHalftime,
+        opponentHalftime: isHome ? awayHalftime : homeHalftime,
+        totalHalftime: homeHalftime + awayHalftime,
+      };
+    });
 
     const totaisIntervalo = jogosIntervalo.reduce(
       (acc, jogo) => ({
@@ -1758,7 +1804,7 @@ function BasketballStats() {
             </div>
           </div>
 
-          {/* Add the global input right below the teams */}
+          {/* Adicione o input global logo abaixo dos times */}
           <LinhaGlobalInput />
 
           {/* Comparison Row - Full width */}
