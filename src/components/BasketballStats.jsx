@@ -686,8 +686,84 @@ function BasketballStats() {
       );
     }
 
-    const totais = calcularTotaisJogos(teamData.games);
+    const totais = calcularTotaisJogos(teamData.games, teamData.id);
     const linha = linhasOverUnder[teamData.id] || 200.5;
+    const jogosCount = teamData.games.length;
+
+    const mediaPontosFeitos = jogosCount
+      ? (totais.pontosFeitos / jogosCount).toFixed(1)
+      : "0.0";
+    const mediaPontosSofridos = jogosCount
+      ? (totais.pontosSofridos / jogosCount).toFixed(1)
+      : "0.0";
+    const mediaTotal = jogosCount ? (totais.total / jogosCount).toFixed(1) : "0.0";
+
+    const getHalftimeScore = (scores) => {
+      if (!scores) return 0;
+      if (typeof scores.halftime === "number") {
+        return scores.halftime;
+      }
+
+      const q1 = scores.quarter_1 ?? 0;
+      const q2 = scores.quarter_2 ?? 0;
+      const hasFirstHalfData = q1 !== 0 || q2 !== 0;
+      if (hasFirstHalfData) {
+        return q1 + q2;
+      }
+
+      if (typeof scores.totalSemOT === "number") {
+        const q3 = scores.quarter_3 ?? 0;
+        const q4 = scores.quarter_4 ?? 0;
+        return scores.totalSemOT - q3 - q4;
+      }
+
+      if (typeof scores.total === "number") {
+        const q3 = scores.quarter_3 ?? 0;
+        const q4 = scores.quarter_4 ?? 0;
+        const overtime = scores.overtime ?? 0;
+        return scores.total - q3 - q4 - overtime;
+      }
+
+      return 0;
+    };
+
+    const jogosIntervalo = teamData.games.map((game, index) => {
+      const homeHalftime = getHalftimeScore(game.scores.home);
+      const awayHalftime = getHalftimeScore(game.scores.away);
+      const isHome = game.teams.home.id === teamData.id;
+      const uniqueId = game.id ?? `${game.date}-${index}`;
+
+      return {
+        id: uniqueId,
+        date: game.date,
+        homeName: formatTeamName(game.teams.home.name),
+        awayName: formatTeamName(game.teams.away.name),
+        homeHalftime,
+        awayHalftime,
+        teamHalftime: isHome ? homeHalftime : awayHalftime,
+        opponentHalftime: isHome ? awayHalftime : homeHalftime,
+        totalHalftime: homeHalftime + awayHalftime,
+      };
+    });
+
+    const totaisIntervalo = jogosIntervalo.reduce(
+      (acc, jogo) => ({
+        pontosFeitos: acc.pontosFeitos + jogo.teamHalftime,
+        pontosSofridos: acc.pontosSofridos + jogo.opponentHalftime,
+        total: acc.total + jogo.totalHalftime,
+      }),
+      { pontosFeitos: 0, pontosSofridos: 0, total: 0 }
+    );
+
+    const mediaIntervaloFeitos = jogosCount
+      ? (totaisIntervalo.pontosFeitos / jogosCount).toFixed(1)
+      : "0.0";
+    const mediaIntervaloSofridos = jogosCount
+      ? (totaisIntervalo.pontosSofridos / jogosCount).toFixed(1)
+      : "0.0";
+    const mediaIntervaloTotal = jogosCount
+      ? (totaisIntervalo.total / jogosCount).toFixed(1)
+      : "0.0";
 
     return (
       <div className="last-games">
@@ -741,13 +817,61 @@ function BasketballStats() {
             <tr className="totals-row">
               <td colSpan="7">
                 <div className="totals-content">
-                  <span>Total de pontos nos jogos: {totais.total}</span>
-                  <span>Média: {(totais.total / teamData.games.length).toFixed(1)}</span>
+                  <span>Total de pontos combinados: {totais.total}</span>
+                  <span>Média total: {mediaTotal}</span>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
+        <div className="team-averages-banner">
+          <div className="average-card">
+            <span className="average-title">Média {teamData.name}</span>
+            <div className="average-values">
+              <span className="average-label">Pontos feitos</span>
+              <span className="average-number">{mediaPontosFeitos}</span>
+            </div>
+            <div className="average-values">
+              <span className="average-label">Pontos tomados</span>
+              <span className="average-number">{mediaPontosSofridos}</span>
+            </div>
+          </div>
+          <div className="average-card halftime">
+            <span className="average-title">Média no intervalo</span>
+            <div className="average-values">
+              <span className="average-label">Pontos feitos</span>
+              <span className="average-number">{mediaIntervaloFeitos}</span>
+            </div>
+            <div className="average-values">
+              <span className="average-label">Pontos tomados</span>
+              <span className="average-number">{mediaIntervaloSofridos}</span>
+            </div>
+          </div>
+        </div>
+        <div className="halftime-section">
+          <h4>Pontuação no intervalo (últimos 5 jogos)</h4>
+          <div className="halftime-list">
+            {jogosIntervalo.map((jogo) => (
+              <div key={jogo.id} className="halftime-item">
+                <div className="halftime-date">{formatarData(jogo.date)}</div>
+                <div className="halftime-score">
+                  <span className="team-name">{jogo.homeName}</span>
+                  <span className="halftime-points">
+                    {jogo.homeHalftime} - {jogo.awayHalftime}
+                  </span>
+                  <span className="team-name">{jogo.awayName}</span>
+                </div>
+                <div className="halftime-total">Total: {jogo.totalHalftime}</div>
+              </div>
+            ))}
+          </div>
+          <div className="halftime-summary-banner">
+            <span>
+              Média total no intervalo: {mediaIntervaloTotal} | Pontos feitos: {mediaIntervaloFeitos} |
+              Pontos tomados: {mediaIntervaloSofridos}
+            </span>
+          </div>
+        </div>
       </div>
     );
   };
@@ -1480,13 +1604,13 @@ function BasketballStats() {
             </div>
           </div>
 
+          {/* Adicione o input global logo abaixo dos times */}
+          <LinhaGlobalInput />
+
           {/* Comparison Row - Full width */}
           <div className="comparison-row">
             {!loading && renderResultadosComparacao()}
           </div>
-
-          {/* Adicione o input global antes da linha de análise */}
-          <LinhaGlobalInput />
 
           {/* Analysis Row - Over/Under analysis side by side */}
           <div className="analysis-row">
