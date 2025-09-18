@@ -299,6 +299,163 @@
   }
 }
 
+.team-averages-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.average-card {
+  flex: 1 1 220px;
+  background: linear-gradient(135deg, rgba(72, 187, 120, 0.15), rgba(66, 153, 225, 0.1));
+  border: 1px solid rgba(72, 187, 120, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: #e2e8f0;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.35);
+}
+
+.average-card.halftime {
+  background: linear-gradient(135deg, rgba(79, 209, 197, 0.2), rgba(43, 108, 176, 0.15));
+  border-color: rgba(66, 153, 225, 0.35);
+}
+
+.average-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #f6ad55;
+}
+
+.average-card.halftime .average-title {
+  color: #63b3ed;
+}
+
+.average-values {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.average-label {
+  font-size: 0.85rem;
+  color: #cbd5f5;
+}
+
+.average-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.halftime-section {
+  margin-top: 1.5rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(99, 179, 237, 0.25);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: inset 0 0 0 1px rgba(99, 179, 237, 0.1);
+}
+
+.halftime-section h4 {
+  margin-bottom: 1rem;
+  color: #63b3ed;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.halftime-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.halftime-item {
+  display: grid;
+  grid-template-columns: 1.5fr 2fr 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(30, 41, 59, 0.8);
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.halftime-date {
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.halftime-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #cbd5f5;
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #f6ad55;
+  text-transform: uppercase;
+}
+
+.halftime-points {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.halftime-total {
+  text-align: right;
+  font-size: 0.85rem;
+  color: #cbd5f5;
+  font-weight: 600;
+}
+
+.halftime-summary-banner {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(66, 153, 225, 0.2), rgba(56, 189, 248, 0.15));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #ebf4ff;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 900px) {
+  .team-averages-banner {
+    flex-direction: column;
+  }
+
+  .halftime-item {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .halftime-score {
+    flex-wrap: wrap;
+  }
+
+  .halftime-total {
+    text-align: center;
+  }
+}
+
 .comparison-section {
   margin: 0;
   width: 100%;
@@ -879,7 +1036,6 @@
   min-width: 100px;
 }
 
-/* Adicione estes estilos para a nova coluna */
 .variacao {
   font-weight: 600;
   padding: 4px 8px;
@@ -897,13 +1053,11 @@
   background: rgba(252, 129, 129, 0.1);
 }
 
-/* Ajuste o layout da tabela para acomodar a nova coluna */
 .comparison-section table th:nth-child(5),
 .comparison-section table td:nth-child(5) {
   width: 120px;
 }
 
-/* Adicione estes estilos para a tabela de comparação */
 .comparison-section .team-header-cell {
   display: flex;
   align-items: center;
@@ -922,24 +1076,24 @@
   padding: 2px;
 }
 
-.comparison-section table th:nth-child(1), /* Data */
+.comparison-section table th:nth-child(1),
 .comparison-section table td:nth-child(1) {
   width: 15%;
 }
 
-.comparison-section table th:nth-child(2), /* Time 1 */
+.comparison-section table th:nth-child(2),
 .comparison-section table td:nth-child(2),
-.comparison-section table th:nth-child(3), /* Time 2 */
+.comparison-section table th:nth-child(3),
 .comparison-section table td:nth-child(3) {
   width: 25%;
 }
 
-.comparison-section table th:nth-child(4), /* Total */
+.comparison-section table th:nth-child(4),
 .comparison-section table td:nth-child(4) {
   width: 20%;
 }
 
-.comparison-section table th:nth-child(5), /* Variação */
+.comparison-section table th:nth-child(5),
 .comparison-section table td:nth-child(5) {
   width: 15%;
 }
@@ -1003,7 +1157,6 @@
   }
 }
 
-/* Estilos Gerais */
 .app-container {
   font-family: "Poppins", sans-serif;
   color: #e4e6f0;
@@ -1035,7 +1188,6 @@
   opacity: 0.9;
 }
 
-/* Container Principal */
 .stats-container {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
@@ -1045,7 +1197,6 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
-/* Animações */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1311,7 +1462,6 @@
   color: #fc8181;
 }
 
-/* Responsividade */
 @media (max-width: 768px) {
   .analise-cards {
     grid-template-columns: 1fr;
@@ -1368,7 +1518,6 @@ select:disabled {
   gap: 0.5rem;
 }
 
-/* Animação suave para transições de estado */
 select {
   transition: all 0.3s ease;
 }
@@ -1383,9 +1532,6 @@ select:not(:disabled):focus {
   box-shadow: 0 0 0 2px rgba(165, 180, 252, 0.2);
 }
 
-/* Add these styles at the end of your existing CSS file */
-
-/* Skeleton custom styles */
 .react-loading-skeleton {
   background-color: rgba(26, 32, 44, 0.3) !important;
   background-image: linear-gradient(
@@ -1396,7 +1542,6 @@ select:not(:disabled):focus {
   ) !important;
 }
 
-/* Adjust spacing for skeleton items */
 .stats-section .react-loading-skeleton {
   margin-bottom: 8px;
 }
@@ -1409,7 +1554,6 @@ select:not(:disabled):focus {
   margin: 4px 0;
 }
 
-/* Ensure skeleton containers maintain proper spacing */
 .team-data-container .react-loading-skeleton {
   border-radius: 12px;
 }
@@ -1424,7 +1568,6 @@ select:not(:disabled):focus {
   }
 }
 
-/* Updated color variables */
 :root {
   --primary-blue: #1a73e8;
   --secondary-blue: #4285f4;
@@ -1439,7 +1582,6 @@ select:not(:disabled):focus {
   --warning: #fbbf24;
 }
 
-/* Mobile optimizations */
 @media (max-width: 768px) {
   .stats-tables-container {
     grid-template-columns: 1fr;
@@ -1453,7 +1595,6 @@ select:not(:disabled):focus {
     padding: 0.75rem;
   }
 
-  /* Make table headers sticky on mobile */
   .stats-table th,
   .comparison-section th,
   .last-games th {
@@ -1462,14 +1603,12 @@ select:not(:disabled):focus {
     z-index: 10;
   }
 
-  /* Adjust padding for mobile */
   .stats-table td,
   .comparison-section td,
   .last-games td {
     padding: 0.75rem;
   }
 
-  /* Add horizontal scroll indicators */
   .stats-table::after,
   .comparison-section::after,
   .last-games::after {
@@ -1492,7 +1631,6 @@ select:not(:disabled):focus {
   }
 }
 
-/* Scrollbar styling */
 .stats-table::-webkit-scrollbar,
 .comparison-section::-webkit-scrollbar,
 .last-games::-webkit-scrollbar {
@@ -1513,7 +1651,6 @@ select:not(:disabled):focus {
   border-radius: 3px;
 }
 
-/* Touch device optimizations */
 @media (hover: none) {
   .stats-table,
   .comparison-section,
@@ -1523,7 +1660,6 @@ select:not(:disabled):focus {
   }
 }
 
-/* Atualize estas classes para melhor responsividade */
 .stats-tables-container {
   display: flex;
   flex-direction: column;
@@ -1532,7 +1668,6 @@ select:not(:disabled):focus {
   padding: 10px;
 }
 
-/* Nova classe para wrapping de tabelas */
 .table-wrapper {
   width: 100%;
   background: var(--neutral-900);
@@ -1541,7 +1676,6 @@ select:not(:disabled):focus {
   margin-bottom: 1rem;
 }
 
-/* Atualização da classe last-games */
 .last-games {
   width: 100%;
   background: var(--neutral-900);
@@ -1554,7 +1688,6 @@ select:not(:disabled):focus {
   table-layout: fixed;
 }
 
-/* Ajuste das colunas da tabela para melhor responsividade */
 .last-games th,
 .last-games td {
   padding: 0.75rem 0.5rem;
@@ -1564,35 +1697,33 @@ select:not(:disabled):focus {
   white-space: nowrap;
 }
 
-/* Defina larguras específicas para cada coluna */
 .last-games th:nth-child(1),
-.last-games td:nth-child(1) { /* Data */
+.last-games td:nth-child(1) {
   width: 15%;
 }
 
 .last-games th:nth-child(2),
-.last-games td:nth-child(2) { /* Status */
+.last-games td:nth-child(2) {
   width: 10%;
 }
 
 .last-games th:nth-child(3),
 .last-games td:nth-child(3),
 .last-games th:nth-child(5),
-.last-games td:nth-child(5) { /* Times */
+.last-games td:nth-child(5) {
   width: 25%;
 }
 
 .last-games th:nth-child(4),
-.last-games td:nth-child(4) { /* Placar */
+.last-games td:nth-child(4) {
   width: 15%;
 }
 
 .last-games th:nth-child(6),
-.last-games td:nth-child(6) { /* Total */
+.last-games td:nth-child(6) {
   width: 10%;
 }
 
-/* Atualização da seção de comparação */
 .comparison-section {
   width: 100%;
   margin: 1rem 0;
@@ -1612,30 +1743,28 @@ select:not(:disabled):focus {
   white-space: nowrap;
 }
 
-/* Ajuste das larguras das colunas da tabela de comparação */
 .comparison-section th:nth-child(1),
-.comparison-section td:nth-child(1) { /* Data */
+.comparison-section td:nth-child(1) {
   width: 15%;
 }
 
 .comparison-section th:nth-child(2),
 .comparison-section td:nth-child(2),
 .comparison-section th:nth-child(3),
-.comparison-section td:nth-child(3) { /* Times */
+.comparison-section td:nth-child(3) {
   width: 25%;
 }
 
 .comparison-section th:nth-child(4),
-.comparison-section td:nth-child(4) { /* Total */
+.comparison-section td:nth-child(4) {
   width: 20%;
 }
 
 .comparison-section th:nth-child(5),
-.comparison-section td:nth-child(5) { /* Variação */
+.comparison-section td:nth-child(5) {
   width: 15%;
 }
 
-/* Media queries atualizadas */
 @media (max-width: 768px) {
   .basketball-stats-container {
     padding: 10px;
@@ -1646,13 +1775,11 @@ select:not(:disabled):focus {
     padding: 0.5rem;
   }
 
-  /* Ajuste para tabelas em telas pequenas */
   .last-games table,
   .comparison-section table {
     font-size: 0.75rem;
   }
 
-  /* Esconda algumas colunas menos importantes em telas muito pequenas */
   @media (max-width: 480px) {
     .last-games th:nth-child(2),
     .last-games td:nth-child(2) {
@@ -1668,14 +1795,12 @@ select:not(:disabled):focus {
   }
 }
 
-/* Estilo para texto truncado com reticências */
 .truncate {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Tooltip para mostrar texto completo quando truncado */
 .truncate:hover {
   position: relative;
 }
@@ -1833,6 +1958,127 @@ select:not(:disabled):focus {
   font-weight: 600;
 }
 
+.summary-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.results-summary-card {
+  background-color: rgba(26, 32, 44, 0.8);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid rgba(165, 180, 252, 0.12);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+}
+
+.summary-card-title {
+  color: #a5b4fc;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.summary-card-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #cbd5f5;
+  font-size: 0.9rem;
+}
+
+.summary-card-value {
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.summary-card-value.over-value {
+  color: #48bb78;
+}
+
+.summary-card-value.under-value {
+  color: #fc8181;
+}
+
+.summary-card-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(165, 180, 252, 0.3), rgba(165, 180, 252, 0));
+  border-radius: 999px;
+}
+
+.summary-card-delta {
+  font-weight: 700;
+}
+
+.summary-card-delta.positive {
+  color: #48bb78;
+}
+
+.summary-card-delta.negative {
+  color: #fc8181;
+}
+
+.summary-card-subtitle {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #a5b4fc;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.halftime-summary-teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.halftime-team-panel {
+  background-color: rgba(15, 23, 42, 0.55);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.6);
+}
+
+.halftime-team-name {
+  font-weight: 600;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.halftime-team-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #cbd5f5;
+}
+
+.halftime-team-stat span:first-child {
+  color: rgba(226, 232, 240, 0.75);
+  font-weight: 500;
+}
+
+.halftime-team-split {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.halftime-team-split .over-value,
+.halftime-team-split .under-value {
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .comparison-container {
     flex-direction: column;
@@ -1852,8 +2098,6 @@ select:not(:disabled):focus {
   }
 }
 
-/* ...existing styles... */
-
 .media-row td {
   padding: 12px;
   color: #e2e8f0;
@@ -1864,8 +2108,6 @@ select:not(:disabled):focus {
   color: #a5b4fc;
   font-weight: 700;
 }
-
-/* ...rest of existing styles... */
 
 .totals-content {
   display: flex;
@@ -1893,10 +2135,6 @@ select:not(:disabled):focus {
   color: #fc8181;
   background: rgba(252, 129, 129, 0.1);
 }
-
-/* ...rest of existing styles... */
-
-/* ...existing styles... */
 
 .linha-global-container input:focus {
   outline: none;

@@ -712,6 +712,8 @@ function BasketballStats() {
                 <div className="totals-content">
                   <span>Total de pontos combinados: {totais.total}</span>
                   <span>Média total: {mediaTotal}</span>
+                  <span>Total de pontos combinados: {totais.total}</span>
+                  <span>Média total: {mediaTotal}</span>
                 </div>
               </td>
             </tr>
