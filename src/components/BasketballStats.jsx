@@ -1758,7 +1758,7 @@ function BasketballStats() {
             </div>
           </div>
 
-          {/* Adicione o input global logo abaixo dos times */}
+          {/* Add the global input right below the teams */}
           <LinhaGlobalInput />
 
           {/* Comparison Row - Full width */}
