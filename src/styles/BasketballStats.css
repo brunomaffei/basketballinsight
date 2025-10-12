@@ -8,6 +8,67 @@
   overflow-x: auto; /* Adicionado para responsividade */
 }
 
+/* Simplified Summary Styles */
+.selector-summary-container {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  margin-top: 2rem;
+  padding: 0 1rem;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.selector-summary-container.multi-summary .results-summary-card {
+  flex: 1 1 360px;
+  max-width: 480px;
+  margin: 0;
+}
+
+.selector-summary-container .results-summary-card {
+  background: linear-gradient(145deg, rgba(26, 32, 53, 0.95) 0%, rgba(44, 62, 80, 0.95) 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 140, 66, 0.3);
+  box-shadow: 0 8px 32px rgba(255, 75, 31, 0.15);
+  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Pequeno brilho nas bordas para destacar dois cartões lado a lado */
+.selector-summary-container .results-summary-card:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(255,140,66,0.35), rgba(165,180,252,0.15));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+.simplified-summary-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+  padding: 1rem;
+}
+
+.simplified-summary .results-summary-card {
+  max-width: 400px;
+  margin: 0 auto;
+  background: linear-gradient(145deg, rgba(26, 32, 53, 0.95) 0%, rgba(44, 62, 80, 0.95) 100%);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 140, 66, 0.3);
+  box-shadow: 0 8px 32px rgba(255, 75, 31, 0.15);
+  backdrop-filter: blur(12px);
+}
+
 .selectors-container {
   background: linear-gradient(145deg, rgba(26, 32, 53, 0.95) 0%, rgba(44, 62, 80, 0.95) 100%);
   border-radius: 16px;

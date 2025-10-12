@@ -237,6 +237,8 @@ function BasketballStats() {
   const [historicoTime1, setHistoricoTime1] = useState(null);
   const [linhasOverUnder, setLinhasOverUnder] = useState({});
   const [linhaGlobal, setLinhaGlobal] = useState(200.5);
+  // Linha específica para análise de intervalo (1º tempo)
+  const [linhaIntervalo, setLinhaIntervalo] = useState(100.5);
 
   const updateLoadingState = (key, value) => {
     setLoadingStates((prev) => ({ ...prev, [key]: value }));
@@ -1013,7 +1015,6 @@ function BasketballStats() {
     }
   };
 
-  // Adicione este componente para renderizar o histórico
   const renderHistorico = () => {
     if (!historicoTime1) return null;
 
@@ -1049,7 +1050,6 @@ function BasketballStats() {
     );
   };
 
-  // Atualizar o valor da linha quando mudar no AnaliseOverUnder
   const handleLinhaChange = (novaLinha) => {
     setLinhaGlobal(novaLinha);
     setLinhasOverUnder(prev => ({
@@ -1059,14 +1059,17 @@ function BasketballStats() {
     }));
   };
 
-  // Função auxiliar para calcular a média geral
+  // Atualiza somente a linha de intervalo
+  const handleLinhaIntervaloChange = (novaLinha) => {
+    setLinhaIntervalo(novaLinha);
+  };
+
   const calcularMediaGeral = (comparacoes) => {
     if (!comparacoes || comparacoes.length === 0) return 0;
     const total = comparacoes.reduce((acc, comp) => acc + comp.totalCombinado, 0);
     return parseFloat((total / comparacoes.length).toFixed(2));
   };
 
-  // Atualize o useEffect que monitora mudanças nas linhas
   useEffect(() => {
     if (team1Data && team2Data) {
       const comparacoes = calcularComparacao(team1Data.games, team2Data.games, selectedTeams, linhasOverUnder);
@@ -1074,11 +1077,8 @@ function BasketballStats() {
     }
   }, [team1Data, team2Data, selectedTeams, linhasOverUnder, calcularComparacao]);
 
-  // Adicione esta função para unificar todas as variações
   const getTotalVariations = () => {
     if (!team1Data?.games || !team2Data?.games) return null;
-
-    // Variações do Time 1
     const variationsTime1 = team1Data.games.map(game => {
       const total = calcularTotalPartida(game);
       const linha = linhasOverUnder[team1Data.id] || 200.5;
@@ -1092,7 +1092,6 @@ function BasketballStats() {
       };
     });
 
-    // Variações do Time 2
     const variationsTime2 = team2Data.games.map(game => {
       const total = calcularTotalPartida(game);
       const linha = linhasOverUnder[team2Data.id] || 200.5;
@@ -1106,7 +1105,6 @@ function BasketballStats() {
       };
     });
 
-    // Variações dos jogos combinados
     const comparacoes = calcularComparacao(team1Data.games, team2Data.games, selectedTeams, linhasOverUnder);
     const variationsComparacoes = comparacoes.map(comp => ({
       data: comp.data,
@@ -1117,7 +1115,6 @@ function BasketballStats() {
       detalhes: `${comp.time1.pontos} + ${comp.time2.pontosTomados}`
     }));
 
-    // Combina todas as variações
     const allVariations = [
       ...variationsTime1,
       ...variationsTime2,
@@ -1146,7 +1143,6 @@ function BasketballStats() {
     };
   };
 
-  // Card compacto com resumo geral das variações
   const renderResumoGeral = () => {
     const variations = getTotalVariations();
     if (!variations) return null;
@@ -1191,73 +1187,60 @@ function BasketballStats() {
 
   const getHalftimeVariationsSummary = () => {
     if (!team1Data?.games || !team2Data?.games) return null;
+    const team1Games = buildHalftimeGames(team1Data); // 5 últimos jogos time 1
+    const team2Games = buildHalftimeGames(team2Data); // 5 últimos jogos time 2
 
-    const team1Games = buildHalftimeGames(team1Data);
-    const team2Games = buildHalftimeGames(team2Data);
+    // Linha de intervalo informada pelo usuário (considera total do 1º tempo)
+    const linha = linhaIntervalo;
 
-    const linhaTeam1 = (linhasOverUnder[team1Data.id] ?? linhaGlobal) / 2;
-    const linhaTeam2 = (linhasOverUnder[team2Data.id] ?? linhaGlobal) / 2;
+    const processGames = (games) => {
+      if (!games.length) return {
+        jogos: 0,
+        mediaFeitos: 0,
+        mediaTomados: 0,
+        mediaTotal: 0,
+        totalGeral: 0,
+        over: 0,
+        under: 0,
+        mediaVariacao: 0
+      };
 
-    const computeTeamSummary = (games, linha) => {
-      if (!games.length) return null;
-
-      const totals = games.reduce(
-        (acc, jogo) => {
-          const total = jogo.totalHalftime;
-          return {
-            feitos: acc.feitos + jogo.teamHalftime,
-            tomados: acc.tomados + jogo.opponentHalftime,
-            geral: acc.geral + total,
-            variacaoSoma: acc.variacaoSoma + (total - linha),
-            over: acc.over + (Number.isFinite(linha) && linha > 0 && total > linha ? 1 : 0),
-          };
-        },
-        { feitos: 0, tomados: 0, geral: 0, variacaoSoma: 0, over: 0 }
-      );
+      const totals = games.reduce((acc, jogo) => {
+        const total = jogo.totalHalftime;
+        return {
+          feitos: acc.feitos + jogo.teamHalftime,
+          tomados: acc.tomados + jogo.opponentHalftime,
+          geral: acc.geral + total,
+          over: acc.over + (Number.isFinite(linha) && total > linha ? 1 : 0),
+          variacaoSoma: acc.variacaoSoma + (Number.isFinite(linha) ? (total - linha) : 0)
+        };
+      }, { feitos: 0, tomados: 0, geral: 0, over: 0, variacaoSoma: 0 });
 
       const jogos = games.length;
-      const linhaValida = Number.isFinite(linha) && linha > 0;
-      const over = linhaValida ? totals.over : null;
-      const under = linhaValida ? jogos - totals.over : null;
-      const mediaVariacao = linhaValida ? totals.variacaoSoma / jogos : null;
-
       return {
         jogos,
         mediaFeitos: jogos ? totals.feitos / jogos : 0,
         mediaTomados: jogos ? totals.tomados / jogos : 0,
         mediaTotal: jogos ? totals.geral / jogos : 0,
         totalGeral: totals.geral,
-        over,
-        under,
-        mediaVariacao,
+        over: totals.over,
+        under: jogos - totals.over,
+        mediaVariacao: jogos ? totals.variacaoSoma / jogos : 0
       };
     };
 
-    const resumoTime1 = computeTeamSummary(team1Games, linhaTeam1);
-    const resumoTime2 = computeTeamSummary(team2Games, linhaTeam2);
+    const resumoTime1 = { ...processGames(team1Games), name: team1Data.name };
+    const resumoTime2 = { ...processGames(team2Games), name: team2Data.name };
 
-    const summaries = [
-      resumoTime1 ? { ...resumoTime1, name: team1Data.name } : null,
-      resumoTime2 ? { ...resumoTime2, name: team2Data.name } : null,
-    ].filter(Boolean);
+    const summaries = [resumoTime1, resumoTime2];
+    const totalJogos = summaries.reduce((acc, s) => acc + s.jogos, 0); // Deve ser 10
+    if (totalJogos === 0) return null;
 
-    if (!summaries.length) return null;
-
-    const totalJogos = summaries.reduce((acc, item) => acc + item.jogos, 0);
-    const totalGeralPontos = summaries.reduce((acc, item) => acc + item.totalGeral, 0);
-    const mediaGeral = totalJogos ? totalGeralPontos / totalJogos : 0;
-
-    const oversDisponiveis = summaries.every((item) => item.over !== null);
-    const totalOvers = oversDisponiveis
-      ? summaries.reduce((acc, item) => acc + item.over, 0)
-      : null;
-    const totalUnders = oversDisponiveis
-      ? summaries.reduce((acc, item) => acc + item.under, 0)
-      : null;
-
-    const mediaVariacao = oversDisponiveis
-      ? summaries.reduce((acc, item) => acc + item.mediaVariacao * item.jogos, 0) / totalJogos
-      : null;
+    const totalGeralPontos = summaries.reduce((acc, s) => acc + s.totalGeral, 0);
+    const mediaGeral = totalGeralPontos / totalJogos;
+    const totalOvers = summaries.reduce((acc, s) => acc + s.over, 0);
+    const totalUnders = summaries.reduce((acc, s) => acc + s.under, 0);
+    const mediaVariacao = summaries.reduce((acc, s) => acc + (s.mediaVariacao * s.jogos), 0) / totalJogos;
 
     return {
       totalJogos,
@@ -1265,7 +1248,7 @@ function BasketballStats() {
       totalUnders,
       mediaGeral,
       mediaVariacao,
-      teams: summaries,
+      teams: summaries
     };
   };
 
@@ -1285,161 +1268,80 @@ function BasketballStats() {
 
     return (
       <div className="results-summary-card halftime-summary-card">
-        <h4 className="summary-card-title">Resumo Geral das Variações (Intervalo)</h4>
+  <h4 className="summary-card-title">Resumo Geral das Variações (Intervalo) (10 jogos)</h4>
         <div className="summary-card-stat">
           <span>Total de jogos</span>
           <span className="summary-card-value">{resumoIntervalo.totalJogos}</span>
         </div>
-        {resumoIntervalo.totalOvers !== null && (
-          <div className="summary-card-stat">
-            <span>Over intervalo</span>
-            <span className="summary-card-value over-value">{resumoIntervalo.totalOvers}</span>
-          </div>
-        )}
-        {resumoIntervalo.totalUnders !== null && (
-          <div className="summary-card-stat">
-            <span>Under intervalo</span>
-            <span className="summary-card-value under-value">{resumoIntervalo.totalUnders}</span>
-          </div>
-        )}
+        <div className="summary-card-stat">
+          <span>Over intervalo</span>
+          <span className="summary-card-value over-value">{resumoIntervalo.totalOvers}</span>
+        </div>
+        <div className="summary-card-stat">
+          <span>Under intervalo</span>
+          <span className="summary-card-value under-value">{resumoIntervalo.totalUnders}</span>
+        </div>
         <div className="summary-card-divider" />
         <div className="summary-card-stat">
           <span>Média geral intervalo</span>
           <span className="summary-card-value">{mediaGeral}</span>
         </div>
-        {Number.isFinite(mediaVariacao) && mediaVariacao !== null && (
+        <div className="summary-card-stat">
+          <span>Média da variação intervalo</span>
+          <span className={`summary-card-value summary-card-delta ${deltaClass}`}>
+            {mediaVariacao >= 0 ? "+" : ""}{mediaVariacao.toFixed(1)}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSimplifiedSummary = () => {
+    if (!team1Data || !team2Data) return null;
+
+    const variations = getTotalVariations();
+    if (!variations) return null;
+
+    const mediaTotal = Number.isFinite(variations.mediaTotalPontos)
+      ? variations.mediaTotalPontos.toFixed(1)
+      : "0.0";
+    const mediaVariacao = Number.isFinite(variations.mediaVariacao)
+      ? variations.mediaVariacao
+      : 0;
+    const deltaClass = mediaVariacao >= 0 ? "positive" : "negative";
+
+    return (
+      <div className="simplified-summary-container">
+        <div className="results-summary-card general-summary-card">
+          <h4 className="summary-card-title">Resumo Geral das Variações</h4>
           <div className="summary-card-stat">
-            <span>Média da variação intervalo</span>
+            <span>Total de jogos</span>
+            <span className="summary-card-value">{variations.totalJogos}</span>
+          </div>
+          <div className="summary-card-stat">
+            <span>Over</span>
+            <span className="summary-card-value over-value">{variations.over.length}</span>
+          </div>
+          <div className="summary-card-stat">
+            <span>Under</span>
+            <span className="summary-card-value under-value">{variations.under.length}</span>
+          </div>
+          <div className="summary-card-divider" />
+          <div className="summary-card-stat">
+            <span>Média Geral</span>
+            <span className="summary-card-value">{mediaTotal}</span>
+          </div>
+          <div className="summary-card-stat">
+            <span>Média da variação</span>
             <span className={`summary-card-value summary-card-delta ${deltaClass}`}>
               {mediaVariacao >= 0 ? "+" : ""}{mediaVariacao.toFixed(1)}
             </span>
           </div>
-        )}
-        <div className="summary-card-subtitle">Médias por time (intervalo)</div>
-        <div className="halftime-summary-teams">
-          {resumoIntervalo.teams.map((team) => (
-            <div key={team.name} className="halftime-team-panel">
-              <span className="halftime-team-name">{team.name}</span>
-              <div className="halftime-team-stat">
-                <span>Jogos analisados</span>
-                <span className="summary-card-value">{team.jogos}</span>
-              </div>
-              <div className="halftime-team-stat">
-                <span>Pontos feitos (média)</span>
-                <span className="summary-card-value">
-                  {Number.isFinite(team.mediaFeitos) ? team.mediaFeitos.toFixed(1) : "0.0"}
-                </span>
-              </div>
-              <div className="halftime-team-stat">
-                <span>Pontos tomados (média)</span>
-                <span className="summary-card-value">
-                  {Number.isFinite(team.mediaTomados) ? team.mediaTomados.toFixed(1) : "0.0"}
-                </span>
-              </div>
-              {team.over !== null && team.under !== null && (
-                <div className="halftime-team-split">
-                  <span className="over-value">Over: {team.over}</span>
-                  <span className="under-value">Under: {team.under}</span>
-                </div>
-              )}
-            </div>
-          ))}
         </div>
       </div>
     );
   };
 
-  // Função auxiliar para renderizar o resumo geral no componente principal
-  const renderResultadosComparacao = () => {
-    if (!team1Data || !team2Data) return null;
-
-    const comparacoes = calcularComparacao(team1Data.games, team2Data.games, selectedTeams, linhasOverUnder);
-
-    if (!comparacoes || comparacoes.length === 0) {
-      return (
-        <div className="comparison-section">
-          <h3>Comparação de Jogos - Favorito + Tomados</h3>
-          <p>Não há dados suficientes para comparação</p>
-        </div>
-      );
-    }
-
-    const totalGeral = comparacoes.reduce(
-      (acc, comp) => acc + comp.totalCombinado,
-      0
-    );
-    const mediaAtual = (totalGeral / comparacoes.length).toFixed(2);
-    const mediaVariacoes = comparacoes.reduce((acc, comp) => acc + comp.diferencaDaLinha, 0) / comparacoes.length;
-
-    return (
-      <div className="comparison-section">
-        <h3>Comparação de Jogos - Favorito + Tomados</h3>
-        <div className="comparison-container" style={{ display: 'flex', gap: '20px' }}>
-          <table style={{ flex: '2' }}>
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Favorito</th>
-                <th>Pts Adversário</th>
-                <th>Total</th>
-                <th>Var.</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparacoes.map((comp, index) => (
-                <tr key={index}>
-                  <td>{comp.data}</td>
-                  <td className="pontos-feitos">
-                    {comp.time1.pontos}
-                    {comp.hasOvertime && <span className="overtime">*</span>}
-                  </td>
-                  <td className="pontos-tomados">
-                    {comp.time2.pontosTomados}
-                    {comp.hasOvertime && <span className="overtime">*</span>}
-                  </td>
-                  <td className="total-combined">
-                    {comp.totalCombinado}
-                    {comp.hasOvertime && <span className="overtime">*</span>}
-                  </td>
-                  <td
-                    className={`variacao ${
-                      comp.diferencaDaLinha > 0 ? "over" : "under"
-                    }`}
-                  >
-                    {comp.diferencaDaLinha > 0 ? "+" : ""}
-                    {comp.diferencaDaLinha.toFixed(1)}
-                  </td>
-                </tr>
-              ))}
-              {/* Nova linha com as médias */}
-              <tr className="media-row" style={{
-                backgroundColor: 'rgba(44, 55, 82, 0.9)',
-                fontWeight: 'bold'
-              }}>
-                <td colSpan="3" style={{ textAlign: 'right' }}>Média:</td>
-                <td className="total-combined">{mediaAtual}</td>
-                <td className={`variacao ${mediaVariacoes > 0 ? "over" : "under"}`}>
-                  {mediaVariacoes > 0 ? "+" : ""}
-                  {mediaVariacoes.toFixed(1)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div className="summary-column">
-            {renderResumoGeral()}
-            {renderResumoIntervalo()}
-          </div>
-        </div>
-        {comparacoes.some((comp) => comp.hasOvertime) && (
-          <div className="overtime-note">
-            * Jogo com prorrogação (pontos da prorrogação não incluídos no total)
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Adicione este componente para o input global
   const LinhaGlobalInput = () => {
     const [inputValue, setInputValue] = useState(linhaGlobal.toString().replace('.', ','));
 
@@ -1497,7 +1399,64 @@ function BasketballStats() {
     );
   };
 
-  // Return statement (main render)
+  // Componente para linha de intervalo
+  const LinhaIntervaloInput = () => {
+    const [inputValue, setInputValue] = useState(linhaIntervalo.toString().replace('.', ','));
+
+    const handleInputChange = (e) => {
+      const value = e.target.value.replace(/[^0-9,]/g, '');
+      setInputValue(value);
+    };
+
+    const handleBlur = () => {
+      const parsedValue = parseFloat(inputValue.replace(',', '.'));
+      if (!isNaN(parsedValue)) {
+        handleLinhaIntervaloChange(parsedValue);
+        setInputValue(parsedValue.toString().replace('.', ','));
+      } else {
+        setInputValue(linhaIntervalo.toString().replace('.', ','));
+      }
+    };
+
+    return (
+      <div className="linha-global-container" style={{
+        background: 'rgba(26, 32, 44, 0.8)',
+        padding: '1rem',
+        borderRadius: '8px',
+        marginBottom: '1rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '1rem'
+      }}>
+        <label style={{ color: '#a5b4fc', fontWeight: 'bold' }}>
+          Linha O/U Intervalo:
+        </label>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onBlur={handleBlur}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.target.blur();
+            }
+          }}
+          style={{
+            background: 'rgba(44, 55, 82, 0.9)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '4px',
+            padding: '0.5rem',
+            color: '#fff',
+            width: '100px',
+            textAlign: 'center',
+            fontSize: '1rem'
+          }}
+        />
+      </div>
+    );
+  };
+
   if (error) {
     return (
       <div className="error">
@@ -1641,6 +1600,14 @@ function BasketballStats() {
             </Box>
           </LoadingIndicator>
         )}
+
+        {/* Resumos (Geral + Intervalo) posicionados no topo */}
+        {!isDataFetching && team1Data && team2Data && !loading && (
+          <div className="selector-summary-container multi-summary">
+            {renderResumoGeral()}
+            {renderResumoIntervalo()}
+          </div>
+        )}
       </Paper>
 
       {!isDataFetching && renderTeamAveragesOverview()}
@@ -1674,27 +1641,18 @@ function BasketballStats() {
 
       {!isDataFetching && team1Data && team2Data && (
         <div className="stats-tables-container">
-          {/* Teams Row - Both teams side by side */}
+          <div style={{display:'flex', gap:'1rem', flexWrap:'wrap', justifyContent:'center'}}>
+            <LinhaGlobalInput />
+            <LinhaIntervaloInput />
+          </div>
           <div className="teams-row">
             <div className="team-data-container">
-              {renderTeamStats(team1Data)}
               {renderUltimosJogos(team1Data)}
             </div>
             <div className="team-data-container">
-              {renderTeamStats(team2Data)}
               {renderUltimosJogos(team2Data)}
             </div>
           </div>
-
-          {/* Adicione o input global logo abaixo dos times */}
-          <LinhaGlobalInput />
-
-          {/* Comparison Row - Full width */}
-          <div className="comparison-row">
-            {!loading && renderResultadosComparacao()}
-          </div>
-
-          {/* Analysis Row - Over/Under analysis side by side */}
           <div className="analysis-row">
             <AnaliseOverUnder
               games={team1Data.games}
@@ -1713,7 +1671,6 @@ function BasketballStats() {
           </div>
         </div>
       )}
-      {historicoTime1 && renderHistorico()}
     </div>
   );
 }

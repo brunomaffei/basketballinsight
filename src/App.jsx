@@ -1,5 +1,5 @@
 import BasketballStats from "./components/BasketballStats";
-import analyticsBg from '../public/analytics.webp'; // Ajuste o caminho conforme necessário
+import analyticsBg from '../public/analytics.webp';
 
 function App() {
   return (
